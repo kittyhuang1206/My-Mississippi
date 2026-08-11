@@ -47,11 +47,23 @@
   .drive-bar{ max-width:1500px; margin:0 auto; padding:0 clamp(14px,3vw,36px) 10px; }
   .drive-toggle{ display:inline-flex; align-items:center; gap:7px; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:7px 14px; font-size:12px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
   .drive-toggle svg{ width:14px; height:14px; }
-  .drive-panel{ display:none; margin-top:8px; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:12px 16px; box-shadow:var(--shadow); align-items:center; gap:12px; flex-wrap:wrap; }
-  .drive-panel.open{ display:flex; }
-  .drive-panel select{ background:var(--mist); border:1px solid var(--line); border-radius:9px; padding:7px 11px; font-size:12.5px; min-width:130px; }
-  .drive-panel .dr-result{ margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700; color:var(--coral-deep); }
-  .drive-panel .dr-note{ width:100%; font-size:10.5px; font-style:italic; color:var(--ink-soft); }
+  .drive-panel{ display:none; margin-top:8px; background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:var(--shadow); }
+  .drive-panel.open{ display:block; }
+  .drive-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; }
+  .drive-head strong{ display:block; font-family:'Fraunces',serif; font-size:17px; }
+  .drive-head span{ display:block; color:var(--ink-soft); font-size:11px; margin-top:3px; }
+  .drive-close{ width:30px; height:30px; border:0; border-radius:50%; background:var(--mist); cursor:pointer; }
+  .drive-stops{ display:grid; gap:7px; }
+  .drive-stop{ display:grid; grid-template-columns:24px minmax(150px,1fr) 30px 30px; gap:7px; align-items:center; }
+  .drive-stop-num{ width:22px; height:22px; display:grid; place-items:center; border-radius:50%; background:var(--forest); color:#fff; font:600 10px 'IBM Plex Mono',monospace; }
+  .drive-stop select{ width:100%; background:var(--mist); border:1px solid var(--line); border-radius:9px; padding:9px 11px; font-size:12.5px; }
+  .drive-stop button{ width:30px; height:30px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink-soft); cursor:pointer; }
+  .drive-stop button:disabled{ opacity:.3; cursor:default; }
+  .drive-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .drive-action{ border:1px solid var(--line); border-radius:999px; background:var(--paper); padding:8px 12px; color:var(--forest-deep); font-size:11.5px; font-weight:700; cursor:pointer; }
+  .drive-action.primary{ border-color:var(--forest); background:var(--forest); color:#fff; }
+  .drive-panel .dr-result{ margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; color:var(--coral-deep); }
+  .drive-panel .dr-note{ margin:10px 0 0; font-size:10.5px; color:var(--ink-soft); }
 
   #mapView{ display:flex; gap:0; max-width:1600px; margin:0 auto; padding:0 clamp(10px,2vw,26px) 20px; height: calc(100vh - 150px); min-height:560px; }
   .map-stage{ position:relative; flex:1 1 62%; min-width:0; background: linear-gradient(180deg, #EAF2EF, #E4EEE8 78%, #D7E7EE); border-radius:22px; overflow:hidden; box-shadow: var(--shadow-lg); }
@@ -318,13 +330,17 @@
 </header>
 
 <div class="drive-bar">
-  <button class="drive-toggle" id="driveToggle"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L7 7H17L20 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/><circle cx="16.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/></svg> Plan a Drive</button>
-  <div class="drive-panel" id="drivePanel">
-    <select id="fromSelect"></select>
-    <span style="color:var(--gold)">&rarr;</span>
-    <select id="toSelect"></select>
-    <span class="dr-result" id="drResult">—</span>
-    <p class="dr-note">Estimate only — straight-line distance with a road-curve adjustment, not real turn-by-turn routing.</p>
+  <button class="drive-toggle" id="driveToggle" aria-expanded="false" aria-controls="drivePanel"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L7 7H17L20 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/><circle cx="16.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/></svg> Plan a Drive</button>
+  <div class="drive-panel" id="drivePanel" aria-label="Trip planner">
+    <div class="drive-head"><div><strong>Build your Mississippi drive</strong><span>Add stops here without covering the discovery map.</span></div><button class="drive-close" id="driveClose" aria-label="Close trip planner">✕</button></div>
+    <div class="drive-stops" id="driveStops"></div>
+    <div class="drive-actions">
+      <button class="drive-action" id="addDriveStop">＋ Add stop</button>
+      <button class="drive-action" id="clearDrive">Clear</button>
+      <button class="drive-action primary" id="openDriveRoute">Open route in Google Maps ↗</button>
+      <span class="dr-result" id="drResult">—</span>
+    </div>
+    <p class="dr-note">Distance is an estimate. Google Maps opens only when you request directions; no route stays over your map.</p>
   </div>
 </div>
 
@@ -471,7 +487,7 @@ function haversineMiles(lat1,lon1,lat2,lon2){
 function estimateDrive(a,b){
   const s=haversineMiles(a.lat,a.lon,b.lat,b.lon), miles=Math.round(s*1.25), hours=(s*1.25)/52;
   let tm=Math.round(hours*60), h=Math.floor(tm/60), m=tm%60;
-  return { miles, label: h>0 ? (h+"h "+m+"m") : (m+"m") };
+  return { miles, minutes:tm, label: h>0 ? (h+"h "+m+"m") : (m+"m") };
 }
 
 /* =================================================================== */
@@ -1444,13 +1460,20 @@ const RAW_PLACES = [
       "The Rez Trail"
     ],
     "overview": "A polished Jackson suburb where reservoir trails and boutique shopping meet.",
-    "files": [],
+    "files": [
+      {
+        "src": "assets/photos/ridgeland-b258b2af1323.jpg",
+        "caption": "Ridgeland, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Ridgeland,_Mississippi"
+      }
+    ],
     "localTip": "Combine a walk or bike ride on the Rez Trail with browsing the Mississippi Craft Center — both sit right along the reservoir.",
     "goodToKnow": "Ridgeland was once called Snake Ridge before a friendlier name stuck."
   },
   {
     "id": "yazoocity",
-    "name": "Yazoo City",
+    "name": "Glenwood Cemetery & Witch's Grave",
     "lat": 32.85937,
     "lon": -90.403145,
     "region": "delta",
@@ -1498,7 +1521,14 @@ const RAW_PLACES = [
       "Rosedale river access"
     ],
     "overview": "A sleepy Highway 61 river town that shows up in more blues lyrics than its size would suggest.",
-    "files": [],
+    "files": [
+      {
+        "src": "assets/photos/rosedale-d584574a4013.jpg",
+        "caption": "Rosedale, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Rosedale,_Mississippi"
+      }
+    ],
     "localTip": "Stop at Great River Road State Park for an easy, uncrowded view of the Mississippi River itself.",
     "goodToKnow": "A sleepy Highway 61 river town blues musicians still sing about."
   },
@@ -1526,7 +1556,7 @@ const RAW_PLACES = [
   },
   {
     "id": "bentonia",
-    "name": "Bentonia",
+    "name": "Blue Front Cafe",
     "lat": 32.700015,
     "lon": -90.372156,
     "region": "delta",
@@ -1630,7 +1660,7 @@ const RAW_PLACES = [
   },
   {
     "id": "leland",
-    "name": "Leland",
+    "name": "Birthplace of Kermit the Frog Museum",
     "lat": 33.404834,
     "lon": -90.890925,
     "region": "delta",
@@ -1759,7 +1789,7 @@ const RAW_PLACES = [
   },
   {
     "id": "flora",
-    "name": "Flora",
+    "name": "Mississippi Petrified Forest",
     "lat": 32.557832,
     "lon": -90.323506,
     "region": "capital-river",
@@ -1833,7 +1863,14 @@ const RAW_PLACES = [
     ],
     "dontMiss": [],
     "overview": "Historically nicknamed the 'Homeseekers' Paradise,' a Piney Woods railroad town with a lively historic downtown.",
-    "files": [],
+    "files": [
+      {
+        "src": "assets/photos/brookhaven-ab376da5fcf6.jpg",
+        "caption": "Brookhaven, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Brookhaven,_Mississippi"
+      }
+    ],
     "goodToKnow": "Historically nicknamed the 'Homeseekers' Paradise,' Brookhaven grew up around the Illinois Central Railroad."
   },
   {
@@ -1880,7 +1917,7 @@ const RAW_PLACES = [
   },
   {
     "id": "port-gibson",
-    "name": "Port Gibson",
+    "name": "Windsor Ruins",
     "lat": 31.926604,
     "lon": -91.02303,
     "region": "capital-river",
@@ -2039,7 +2076,14 @@ const RAW_PLACES = [
     ],
     "dontMiss": [],
     "overview": "A Pearl River town and county seat with a historic downtown square in the Piney Woods region.",
-    "files": []
+    "files": [
+      {
+        "src": "assets/photos/columbia-c4f5379a1e1a.jpg",
+        "caption": "Columbia, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Columbia,_Mississippi"
+      }
+    ]
   },
   {
     "id": "magee",
@@ -2056,7 +2100,14 @@ const RAW_PLACES = [
     ],
     "dontMiss": [],
     "overview": "A Piney Woods town along Highway 49, with roots in the timber industry.",
-    "files": []
+    "files": [
+      {
+        "src": "assets/photos/magee-ff3b9007a72c.jpg",
+        "caption": "Magee, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Magee,_Mississippi"
+      }
+    ]
   },
   {
     "id": "forest",
@@ -2073,7 +2124,14 @@ const RAW_PLACES = [
     ],
     "dontMiss": [],
     "overview": "The Scott County seat, home to major poultry-processing plants that anchor the local economy.",
-    "files": [],
+    "files": [
+      {
+        "src": "assets/photos/forest-d63e781edf36.jpg",
+        "caption": "Forest, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Forest,_Mississippi"
+      }
+    ],
     "goodToKnow": "Forest is a hub of Mississippi's poultry industry, one of the state's largest agricultural sectors."
   },
   {
@@ -2131,7 +2189,14 @@ const RAW_PLACES = [
       "Huntington Ingalls shipyard views"
     ],
     "overview": "A Gulf Coast shipbuilding city, home to Huntington Ingalls Industries, one of the largest shipyards in the United States.",
-    "files": [],
+    "files": [
+      {
+        "src": "assets/photos/pascagoula-293360f529a3.jpg",
+        "caption": "Pascagoula, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Pascagoula,_Mississippi"
+      }
+    ],
     "goodToKnow": "Pascagoula is home to one of the largest shipyards in the United States, a cornerstone of the Mississippi Gulf Coast economy."
   },
   {
@@ -2348,7 +2413,14 @@ const RAW_PLACES = [
     ],
     "dontMiss": [],
     "overview": "One of Mississippi's fastest-growing cities, part of the Memphis suburban corridor in DeSoto County.",
-    "files": []
+    "files": [
+      {
+        "src": "assets/photos/olive-branch-c79a1f77d9ff.jpg",
+        "caption": "Olive Branch, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Olive_Branch,_Mississippi"
+      }
+    ]
   },
   {
     "id": "horn-lake",
@@ -2468,7 +2540,14 @@ const RAW_PLACES = [
       "Tanglefoot Trail"
     ],
     "overview": "The birthplace of William Faulkner, with a small historic downtown along the Tanglefoot Trail rail-trail.",
-    "files": [],
+    "files": [
+      {
+        "src": "assets/photos/new-albany-0f5d8b07f3ab.jpg",
+        "caption": "New Albany, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/New_Albany,_Mississippi"
+      }
+    ],
     "goodToKnow": "New Albany is the birthplace of William Faulkner and home to the Tanglefoot Trail, a rail-trail through North Mississippi."
   },
   {
@@ -2608,7 +2687,14 @@ const RAW_PLACES = [
       "Tombigbee National Forest"
     ],
     "overview": "A Winston County seat surrounded by the Tombigbee National Forest.",
-    "files": []
+    "files": [
+      {
+        "src": "assets/photos/louisville-40afbe86921a.jpg",
+        "caption": "Louisville, Mississippi",
+        "credit": "Wikimedia Commons",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Louisville,_Mississippi"
+      }
+    ]
   },
   {
     "id": "kosciusko",
@@ -2671,13 +2757,20 @@ const RAW_PLACES = [
       "Mound Bayou Historic District"
     ],
     "overview": "A historic Delta town founded in 1887 by formerly enslaved people as one of America's first self-governed all-Black communities — civil rights leader Fannie Lou Hamer died here.",
-    "files": [],
+    "files": [
+      {
+        "src": "assets/photos/mound-bayou-historic.jpg",
+        "caption": "Historic Mound Bayou",
+        "credit": "Mississippi Department of Archives and History",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mound_Bayou,_Miss._(22981953213).jpg"
+      }
+    ],
     "goodToKnow": "Fannie Lou Hamer died in Mound Bayou in 1977, though she's buried in nearby Ruleville.",
     "mustSee": true
   },
   {
     "id": "ruleville",
-    "name": "Ruleville",
+    "name": "Fannie Lou Hamer Memorial Garden",
     "lat": 33.724052,
     "lon": -90.552657,
     "region": "delta",
@@ -2852,7 +2945,7 @@ const RAW_PLACES = [
   },
   {
     "id": "sumner",
-    "name": "Sumner",
+    "name": "Tallahatchie County Courthouse",
     "lat": 33.968611,
     "lon": -90.373056,
     "region": "delta",
@@ -3396,10 +3489,10 @@ function buildPins(){
 /* Markers keep a CONSTANT on-screen size regardless of zoom level — this is what
    prevents overlapping hit targets in dense clusters (Jackson/Ridgeland/Madison, etc). */
 const MARKER_SCREEN_H = 29;      // standard outlined/visited pins, slightly larger for easier scanning
-const HEART_SCREEN_H = 25;       // visible heart height in screen px (~+19% from previous 21)
-const STAR_SCREEN_H = 19;        // visible Must See star height in screen px (per spec: ~18-20px)
-const SELECTED_SCREEN_H = 31;    // slightly larger when selected (~+15% from previous 27)
-const HIT_SCREEN_R = 19;         // click/tap target radius in screen px (~38px diameter, +12%)
+const HEART_SCREEN_H = 32;       // status markers should read instantly at statewide zoom
+const STAR_SCREEN_H = 29;
+const SELECTED_SCREEN_H = 37;
+const HIT_SCREEN_R = 22;         // generous 44px touch target without visually enlarging every pin
 const CAPITAL_BONUS = 1.1;       // Jackson stays a touch larger than other pins, on top of the general bump
 
 function screenPxPerUserUnit(){
@@ -4050,27 +4143,49 @@ mapBackdrop.addEventListener("click", closeSheet);
 /* DRIVE PLANNER                                                        */
 /* =================================================================== */
 
-const fromSelect = document.getElementById("fromSelect"), toSelect = document.getElementById("toSelect");
-document.getElementById("driveToggle").addEventListener("click", ()=> document.getElementById("drivePanel").classList.toggle("open"));
-function buildDriveSelects(){
-  const opts = PLACES.filter(p=>p.tier<=2).slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join("");
-  fromSelect.innerHTML = opts; toSelect.innerHTML = opts;
-  fromSelect.value = "jackson"; toSelect.value = "natchez";
-  fromSelect.addEventListener("change", updateDrive); toSelect.addEventListener("change", updateDrive);
+const drivePanel = document.getElementById("drivePanel"), driveToggle = document.getElementById("driveToggle");
+let driveStopIds = ["jackson","natchez"];
+function setDriveOpen(open){ drivePanel.classList.toggle("open",open); driveToggle.setAttribute("aria-expanded",String(open)); }
+driveToggle.addEventListener("click",()=>setDriveOpen(!drivePanel.classList.contains("open")));
+document.getElementById("driveClose").addEventListener("click",()=>setDriveOpen(false));
+function buildDriveSelects(){ renderDriveStops(); }
+function driveOptions(selected){
+  return PLACES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>'<option value="'+p.id+'"'+(p.id===selected?' selected':'')+'>'+p.name+'</option>').join("");
+}
+function renderDriveStops(){
+  const wrap=document.getElementById("driveStops");
+  wrap.innerHTML=driveStopIds.map((id,i)=>'<div class="drive-stop" data-i="'+i+'"><span class="drive-stop-num">'+(i+1)+'</span><select aria-label="Stop '+(i+1)+'">'+driveOptions(id)+'</select><button class="drive-up" aria-label="Move stop up"'+(i===0?' disabled':'')+'>↑</button><button class="drive-remove" aria-label="Remove stop"'+(driveStopIds.length<=2?' disabled':'')+'>✕</button></div>').join("");
+  wrap.querySelectorAll(".drive-stop").forEach(row=>{
+    const i=Number(row.dataset.i);
+    row.querySelector("select").addEventListener("change",e=>{driveStopIds[i]=e.target.value;updateDrive();});
+    row.querySelector(".drive-up").addEventListener("click",()=>{[driveStopIds[i-1],driveStopIds[i]]=[driveStopIds[i],driveStopIds[i-1]];renderDriveStops();});
+    row.querySelector(".drive-remove").addEventListener("click",()=>{driveStopIds.splice(i,1);renderDriveStops();});
+  });
   updateDrive();
 }
 function updateDrive(){
-  const from = placeById(fromSelect.value), to = placeById(toSelect.value);
-  const resultEl = document.getElementById("drResult");
-  document.querySelectorAll(".pin").forEach(g=>g.classList.remove("route-endpoint"));
-  const routeLine = document.getElementById("routeLine");
-  if(from.id===to.id){ resultEl.textContent="Pick two different places"; routeLine.classList.remove("on"); return; }
-  const d = estimateDrive(from,to);
-  resultEl.textContent = d.label+" (est., ≈"+d.miles+" mi)";
-  const a = project(from.lat,from.lon), b = project(to.lat,to.lon);
-  routeLine.setAttribute("d","M "+a.x.toFixed(1)+","+a.y.toFixed(1)+" L "+b.x.toFixed(1)+","+b.y.toFixed(1));
-  routeLine.classList.add("on");
+  const unique=new Set(driveStopIds);
+  const resultEl=document.getElementById("drResult");
+  if(unique.size!==driveStopIds.length){ resultEl.textContent="Choose different stops"; return; }
+  let miles=0, minutes=0;
+  for(let i=1;i<driveStopIds.length;i++){const d=estimateDrive(placeById(driveStopIds[i-1]),placeById(driveStopIds[i]));miles+=d.miles;minutes+=d.minutes;}
+  const hours=Math.floor(minutes/60), mins=Math.round(minutes%60);
+  resultEl.textContent="≈"+Math.round(miles)+" mi · "+(hours?hours+" hr ":"")+mins+" min";
+  document.getElementById("openDriveRoute").disabled=unique.size!==driveStopIds.length;
 }
+document.getElementById("addDriveStop").addEventListener("click",()=>{
+  if(driveStopIds.length>=8){showToast("Trips can include up to 8 stops.");return;}
+  const next=PLACES.find(p=>!driveStopIds.includes(p.id)); if(next) driveStopIds.push(next.id); renderDriveStops();
+});
+document.getElementById("clearDrive").addEventListener("click",()=>{driveStopIds=["jackson","natchez"];renderDriveStops();});
+document.getElementById("openDriveRoute").addEventListener("click",()=>{
+  if(new Set(driveStopIds).size!==driveStopIds.length){showToast("Choose different stops first.");return;}
+  const pts=driveStopIds.map(id=>placeById(id));
+  const coord=p=>p.lat+","+p.lon;
+  const params=new URLSearchParams({api:"1",origin:coord(pts[0]),destination:coord(pts[pts.length-1]),travelmode:"driving"});
+  if(pts.length>2) params.set("waypoints",pts.slice(1,-1).map(coord).join("|"));
+  window.open("https://www.google.com/maps/dir/?"+params.toString(),"_blank","noopener");
+});
 
 /* =================================================================== */
 /* GLOBAL JOURNAL VIEW                                                  */
