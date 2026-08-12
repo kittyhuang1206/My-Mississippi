@@ -115,8 +115,7 @@
   @media (max-width:540px){ .legend-content{ width:min(260px,calc(100vw - 28px)); } }
 
   .search-float{ position:absolute; top:14px; left:14px; z-index:9; width:38px; display:flex; align-items:flex-start; gap:7px; }
-  .search-toggle{ flex:none; width:38px; height:38px; display:grid; place-items:center; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.97); color:var(--forest-deep); box-shadow:var(--shadow); cursor:grab; touch-action:none; }
-  .search-toggle:active{ cursor:grabbing; }
+  .search-toggle{ flex:none; width:38px; height:38px; display:grid; place-items:center; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.97); color:var(--forest-deep); box-shadow:var(--shadow); cursor:pointer; }
   .search-toggle svg{ width:17px; height:17px; }
   .search-content{ display:none; flex:1; min-width:0; position:relative; }
   .search-float.search-open{ width:min(300px,calc(100% - 28px)); }
@@ -374,7 +373,7 @@
 <div id="mapView">
   <div class="map-stage" id="mapStage">
     <div class="search-float" id="searchFloat">
-      <button class="search-toggle" id="searchToggle" aria-label="Open search; drag to move" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="search-toggle" id="searchToggle" aria-label="Open search" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       <div class="search-content" id="searchContent">
         <input type="text" id="searchInput" placeholder="Search places or counties…" autocomplete="off" aria-label="Search places or counties" aria-controls="searchResults">
         <div class="search-float-results" id="searchResults" role="listbox" aria-live="polite"></div>
@@ -4034,38 +4033,13 @@ const searchInput = document.getElementById("searchInput");
 const searchResults = document.getElementById("searchResults");
 const searchFloat = document.getElementById("searchFloat"), searchToggle = document.getElementById("searchToggle");
 const mobileSearchMedia = window.matchMedia("(max-width: 980px)");
-let searchDrag = null, suppressSearchClick = false;
 function setSearchOpen(open){
   searchFloat.classList.toggle("search-open",open);
   searchToggle.setAttribute("aria-expanded",String(open));
-  searchToggle.setAttribute("aria-label",open?"Close search; drag to move":"Open search; drag to move");
+  searchToggle.setAttribute("aria-label",open?"Close search":"Open search");
   if(open) setTimeout(()=>searchInput.focus(),0);
 }
-function clampSearchPosition(left,top){
-  const stage=document.getElementById("mapStage"), sr=stage.getBoundingClientRect(), fr=searchFloat.getBoundingClientRect();
-  return {left:Math.max(8,Math.min(sr.width-fr.width-8,left)),top:Math.max(8,Math.min(sr.height-fr.height-8,top))};
-}
-searchToggle.addEventListener("pointerdown",e=>{
-  const stage=document.getElementById("mapStage"), sr=stage.getBoundingClientRect(), fr=searchFloat.getBoundingClientRect();
-  searchDrag={id:e.pointerId,startX:e.clientX,startY:e.clientY,left:fr.left-sr.left,top:fr.top-sr.top,moved:false};
-});
-searchToggle.addEventListener("pointermove",e=>{
-  if(!searchDrag||e.pointerId!==searchDrag.id)return;
-  const dx=e.clientX-searchDrag.startX,dy=e.clientY-searchDrag.startY;
-  if(!searchDrag.moved&&Math.hypot(dx,dy)<6)return;
-  searchDrag.moved=true; suppressSearchClick=true;
-  if(!searchToggle.hasPointerCapture(e.pointerId))searchToggle.setPointerCapture(e.pointerId);
-  const pos=clampSearchPosition(searchDrag.left+dx,searchDrag.top+dy);
-  searchFloat.style.left=pos.left+"px";searchFloat.style.top=pos.top+"px";
-});
-function endSearchDrag(e){
-  if(!searchDrag||e.pointerId!==searchDrag.id)return;
-  if(searchToggle.hasPointerCapture(e.pointerId))searchToggle.releasePointerCapture(e.pointerId);
-  searchDrag=null;
-}
-searchToggle.addEventListener("pointerup",endSearchDrag); searchToggle.addEventListener("pointercancel",endSearchDrag);
 searchToggle.addEventListener("click",()=>{
-  if(suppressSearchClick){suppressSearchClick=false;return;}
   setSearchOpen(!searchFloat.classList.contains("search-open"));
 });
 const legendStrip=document.getElementById("legendStrip"),legendToggle=document.getElementById("legendToggle");
@@ -4076,8 +4050,8 @@ const filterFloatEl=document.getElementById("filterFloat"), filterSummaryEl=docu
 function syncResponsiveMapTools(){
   mapViewEl.after(filterSummaryEl); mapViewEl.after(filterFloatEl);
   if(!searchFloat.classList.contains("search-open"))setSearchOpen(false);
-  const pos=clampSearchPosition(parseFloat(searchFloat.style.left)||14,parseFloat(searchFloat.style.top)||14);
-  searchFloat.style.left=pos.left+"px";searchFloat.style.top=pos.top+"px";
+  searchFloat.style.removeProperty("left");
+  searchFloat.style.removeProperty("top");
 }
 mobileSearchMedia.addEventListener("change",syncResponsiveMapTools); syncResponsiveMapTools();
 searchInput.addEventListener("input", ()=>{
