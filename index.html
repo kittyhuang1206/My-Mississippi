@@ -37,17 +37,12 @@
   .view-tabs{ display:flex; gap:2px; background:var(--mist); border-radius:999px; padding:3px; }
   .view-tab{ border:none; background:transparent; padding:7px 16px; border-radius:999px; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--ink-soft); }
   .view-tab.active{ background:var(--ink); color:var(--paper); }
-  .header-right{ display:flex; align-items:center; gap:10px; }
-  .progress-mini{ display:flex; align-items:center; gap:8px; font-size:11.5px; font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--ink-soft); }
-  .progress-mini .track{ width:56px; height:5px; border-radius:999px; background:var(--mist); overflow:hidden; }
-  .progress-mini .fill{ height:100%; background:linear-gradient(90deg,var(--coral),var(--gold),var(--magnolia-deep)); }
-  .surprise-btn{ display:flex; align-items:center; gap:6px; background:var(--forest); color:#fff; border:none; border-radius:999px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; }
-  .surprise-btn svg{ width:13px; height:13px; }
+  .header-right{ position:relative; display:flex; align-items:center; justify-content:flex-end; gap:10px; }
 
-  .drive-bar{ max-width:1500px; margin:0 auto; padding:0 clamp(14px,3vw,36px) 10px; }
+  .drive-bar{ position:relative; }
   .drive-toggle{ display:inline-flex; align-items:center; gap:7px; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:7px 14px; font-size:12px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
   .drive-toggle svg{ width:14px; height:14px; }
-  .drive-panel{ display:none; margin-top:8px; background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:var(--shadow); }
+  .drive-panel{ display:none; position:absolute; top:calc(100% + 9px); right:0; z-index:60; width:min(580px,calc(100vw - 28px)); background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:var(--shadow-lg); }
   .drive-panel.open{ display:block; }
   .drive-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; }
   .drive-head strong{ display:block; font-family:'Fraunces',serif; font-size:17px; }
@@ -56,7 +51,7 @@
   .drive-stops{ display:grid; gap:7px; }
   .drive-stop{ display:grid; grid-template-columns:24px minmax(150px,1fr) 30px 30px; gap:7px; align-items:center; }
   .drive-stop-num{ width:22px; height:22px; display:grid; place-items:center; border-radius:50%; background:var(--forest); color:#fff; font:600 10px 'IBM Plex Mono',monospace; }
-  .drive-stop select{ width:100%; background:var(--mist); border:1px solid var(--line); border-radius:9px; padding:9px 11px; font-size:12.5px; }
+  .drive-stop input{ width:100%; background:var(--mist); border:1px solid var(--line); border-radius:9px; padding:9px 11px; font-size:12.5px; }
   .drive-stop button{ width:30px; height:30px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink-soft); cursor:pointer; }
   .drive-stop button:disabled{ opacity:.3; cursor:default; }
   .drive-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
@@ -64,6 +59,11 @@
   .drive-action.primary{ border-color:var(--forest); background:var(--forest); color:#fff; }
   .drive-panel .dr-result{ margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; color:var(--coral-deep); }
   .drive-panel .dr-note{ margin:10px 0 0; font-size:10.5px; color:var(--ink-soft); }
+  @media (max-width:680px){
+    .app-header{ align-items:flex-start; }
+    .header-right{ margin-left:auto; }
+    .drive-panel{ position:fixed; top:76px; right:10px; left:10px; width:auto; max-height:calc(100vh - 92px); overflow:auto; }
+  }
 
   #mapView{ display:flex; gap:0; max-width:1600px; margin:0 auto; padding:0 clamp(10px,2vw,26px) 20px; height: calc(100vh - 150px); min-height:560px; }
   .map-stage{ position:relative; flex:1 1 62%; min-width:0; background: linear-gradient(180deg, #EAF2EF, #E4EEE8 78%, #D7E7EE); border-radius:22px; overflow:hidden; box-shadow: var(--shadow-lg); }
@@ -352,12 +352,7 @@
     <button class="view-tab" data-view="journal">My Journal</button>
   </div>
   <div class="header-right">
-    <button class="surprise-btn" id="surpriseBtn"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 8.5L21 9L16 13.5L17.5 20L12 16.5L6.5 20L8 13.5L3 9L9.5 8.5L12 2Z" stroke="white" stroke-width="1.6" stroke-linejoin="round"/></svg>Surprise Me</button>
-    <div class="progress-mini"><div class="track"><div class="fill" id="progressFill" style="width:0%"></div></div><span id="progressLabel">0/90</span></div>
-  </div>
-</header>
-
-<div class="drive-bar">
+  <div class="drive-bar">
   <button class="drive-toggle" id="driveToggle" aria-expanded="false" aria-controls="drivePanel"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L7 7H17L20 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/><circle cx="16.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/></svg> Plan a Drive</button>
   <div class="drive-panel" id="drivePanel" aria-label="Trip planner">
     <div class="drive-head"><div><strong>Build your Mississippi drive</strong><span>Add stops here without covering the discovery map.</span></div><button class="drive-close" id="driveClose" aria-label="Close trip planner">✕</button></div>
@@ -370,7 +365,11 @@
     </div>
     <p class="dr-note">Distance is an estimate. Google Maps opens only when you request directions; no route stays over your map.</p>
   </div>
+  </div>
 </div>
+</header>
+
+<datalist id="drivePlaceOptions"></datalist>
 
 <div id="mapView">
   <div class="map-stage" id="mapStage">
@@ -493,7 +492,6 @@
   <div class="global-scrapbook" id="globalScrapbook"></div>
 </div>
 
-<footer class="foot">Drive estimates are straight-line calculations, not live routing. Destination photos courtesy of verified Wikimedia Commons contributors. Your journal photos stay on this device.</footer>
 
 <div class="map-backdrop" id="mapBackdrop"></div>
 
@@ -3936,10 +3934,6 @@ function pickSurprise(){
   for(const {p,w} of weighted){ r -= w; if(r<=0) return p; }
   return pool[pool.length-1];
 }
-document.getElementById("surpriseBtn").addEventListener("click", ()=>{
-  navigateToPlace(pickSurprise().id);
-});
-
 /* =================================================================== */
 /* PROGRESS                                                             */
 /* =================================================================== */
@@ -3947,8 +3941,6 @@ document.getElementById("surpriseBtn").addEventListener("click", ()=>{
 function updateProgress(){
   const total = PLACES.length;
   const done = Object.values(placeState.visited).filter(Boolean).length;
-  document.getElementById("progressFill").style.width = (done/total*100)+"%";
-  document.getElementById("progressLabel").textContent = done+"/"+total;
   document.getElementById("journalBigNum").textContent = done+"/"+total;
   document.getElementById("journalBigFill").style.width = (done/total*100)+"%";
 }
@@ -4272,16 +4264,19 @@ let driveStopIds = ["jackson","natchez"];
 function setDriveOpen(open){ drivePanel.classList.toggle("open",open); driveToggle.setAttribute("aria-expanded",String(open)); }
 driveToggle.addEventListener("click",()=>setDriveOpen(!drivePanel.classList.contains("open")));
 document.getElementById("driveClose").addEventListener("click",()=>setDriveOpen(false));
-function buildDriveSelects(){ renderDriveStops(); }
-function driveOptions(selected){
-  return PLACES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>'<option value="'+p.id+'"'+(p.id===selected?' selected':'')+'>'+p.name+'</option>').join("");
+function buildDriveSelects(){
+  document.getElementById("drivePlaceOptions").innerHTML=PLACES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>'<option value="'+p.name+'">'+p.county+' County</option>').join("");
+  renderDriveStops();
 }
+function drivePlaceFromText(value){const q=value.trim().toLowerCase();return PLACES.find(p=>p.name.toLowerCase()===q)||null;}
 function renderDriveStops(){
   const wrap=document.getElementById("driveStops");
-  wrap.innerHTML=driveStopIds.map((id,i)=>'<div class="drive-stop" data-i="'+i+'"><span class="drive-stop-num">'+(i+1)+'</span><select aria-label="Stop '+(i+1)+'">'+driveOptions(id)+'</select><button class="drive-up" aria-label="Move stop up"'+(i===0?' disabled':'')+'>↑</button><button class="drive-remove" aria-label="Remove stop"'+(driveStopIds.length<=2?' disabled':'')+'>✕</button></div>').join("");
+  wrap.innerHTML=driveStopIds.map((id,i)=>'<div class="drive-stop" data-i="'+i+'"><span class="drive-stop-num">'+(i+1)+'</span><input list="drivePlaceOptions" value="'+placeById(id).name+'" placeholder="Type a Mississippi place…" aria-label="Stop '+(i+1)+'" autocomplete="off"><button class="drive-up" aria-label="Move stop up"'+(i===0?' disabled':'')+'>↑</button><button class="drive-remove" aria-label="Remove stop"'+(driveStopIds.length<=2?' disabled':'')+'>✕</button></div>').join("");
   wrap.querySelectorAll(".drive-stop").forEach(row=>{
     const i=Number(row.dataset.i);
-    row.querySelector("select").addEventListener("change",e=>{driveStopIds[i]=e.target.value;updateDrive();});
+    const input=row.querySelector("input");
+    input.addEventListener("input",e=>{const place=drivePlaceFromText(e.target.value);e.target.setAttribute("aria-invalid",String(!place));if(place){driveStopIds[i]=place.id;updateDrive();}else{document.getElementById("drResult").textContent="Choose a suggested place";document.getElementById("openDriveRoute").disabled=true;}});
+    input.addEventListener("change",e=>{const place=drivePlaceFromText(e.target.value);if(place){driveStopIds[i]=place.id;e.target.value=place.name;updateDrive();}});
     row.querySelector(".drive-up").addEventListener("click",()=>{[driveStopIds[i-1],driveStopIds[i]]=[driveStopIds[i],driveStopIds[i-1]];renderDriveStops();});
     row.querySelector(".drive-remove").addEventListener("click",()=>{driveStopIds.splice(i,1);renderDriveStops();});
   });
