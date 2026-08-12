@@ -201,12 +201,16 @@
   .no-photo-header{ height:96px; background:linear-gradient(135deg,#EAF2EF,#F4EFDD); display:flex; align-items:center; padding:0 22px; flex:none; }
   .no-photo-header svg{ width:34px; height:34px; margin-right:12px; flex:none; }
 
-  .panel-body{ padding:18px 22px 24px; }
-  .panel-eyebrow{ font-size:11px; font-weight:700; color:var(--ink-soft); margin:0 0 4px; display:flex; align-items:center; gap:6px; }
+  .panel-body{ padding:20px 24px 26px; }
+  .place-kicker{ margin:0 0 8px; color:var(--forest-deep); font-size:9.5px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }
+  .panel-eyebrow{ font-size:11px; font-weight:700; color:var(--ink-soft); margin:0 0 7px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; line-height:1.3; }
+  .meta-divider{ color:#B8BDB7; font-weight:500; }
+  .place-location{ margin:-1px 0 8px; color:var(--ink-soft); font-size:10.5px; font-weight:600; }
   .capital-star{ color:var(--gold); font-weight:800; }
-  .must-see-tag{ color:#96731f; font-weight:800; }
+  .must-see-tag{ display:inline-flex; align-items:center; color:#8A681C; font-weight:800; letter-spacing:.015em; }
+  .region-tag{ color:var(--forest-deep); font-weight:800; }
   .place-type-tag{ color:var(--forest-deep); font-weight:800; }
-  .place-title{ font-family:'Fraunces',serif; font-size:25px; font-weight:600; margin:0 0 8px; }
+  .place-title{ font-family:'Fraunces',serif; font-size:27px; line-height:1.08; letter-spacing:-.015em; font-weight:600; margin:0 0 10px; }
   .quick-overview{ font-size:13.5px; line-height:1.6; color:var(--ink); margin:0 0 14px; }
   .known-for{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
   .signature-stop{ display:flex; flex-direction:column; gap:3px; background:linear-gradient(135deg,rgba(217,102,63,0.10),rgba(200,154,61,0.10)); border:1px solid rgba(217,102,63,0.25); border-radius:12px; padding:10px 13px; margin:0 0 14px; }
@@ -218,6 +222,11 @@
   .dont-miss-mini{ list-style:none; margin:0 0 16px; padding:0; }
   .dont-miss-mini li{ font-size:13px; line-height:1.5; padding-left:16px; position:relative; margin-bottom:3px; }
   .dont-miss-mini li::before{ content:""; position:absolute; left:0; top:6px; width:6px; height:6px; border-radius:50%; background:var(--river); }
+  @media (max-width:540px){
+    .panel-body{ padding:18px 18px 24px; }
+    .place-title{ font-size:25px; }
+    .panel-eyebrow{ font-size:10.5px; gap:6px; }
+  }
 
   .state-btn-row{ display:flex; gap:8px; margin-bottom:16px; }
   .state-btn{ flex:1; border:1.5px solid var(--line); background:var(--paper); border-radius:12px; padding:10px; font-size:12.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition: all .15s ease; }
@@ -2946,7 +2955,18 @@ const RAW_PLACES = [
     "overview": "Known as \"Mississippi's Little Grand Canyon,\" Red Bluff is a striking, still-eroding canyon of red clay and sand near Foxworth — the kind of place that makes you double-check you're still in Mississippi.",
     "localTip": "There is no official visitor center, maintained trail, or park infrastructure here — this is an actively eroding natural feature on informal roadside access. Verify current conditions and access before visiting, and use caution near unstable edges.",
     "goodToKnow": "The bluff has risen through active erosion of the Pearl River's west bank and stands roughly 371 feet above sea level. Mississippi Highway 587 has been rerouted around it more than once as the erosion continues.",
-    "files": [],
+    "files": [
+      {
+        "src": "assets/photos/red-bluff-canyon.webp",
+        "caption": "Red Bluff's vivid red-and-gold canyon walls",
+        "credit": "Photo supplied by site owner"
+      },
+      {
+        "src": "assets/photos/red-bluff-sunset.jpg",
+        "caption": "Sunset over Red Bluff",
+        "credit": "Photo supplied by site owner"
+      }
+    ],
     "labelPriority": "high",
     "contentPriority": "featured"
   },
@@ -3984,9 +4004,9 @@ async function renderPanel(id){
 
   const hasMore = !!(p.localFlavor || p.fact);
   const PLACE_TYPE_LABELS = { "natural-landmark":"NATURAL LANDMARK", "historic-site":"HISTORIC SITE", "park":"PARK & NATURE", "cultural-attraction":"CULTURAL ATTRACTION" };
-  const placeTypeBadge = (p.placeType && PLACE_TYPE_LABELS[p.placeType]) ? '<span class="place-type-tag">'+PLACE_TYPE_LABELS[p.placeType]+'</span> &middot; ' : '';
-  const capitalBadge = p.isCapital ? '<span class="capital-star">MISSISSIPPI STATE CAPITAL</span> &middot; ' : '';
-  const mustSeeBadge = p.mustSee ? '<span class="must-see-tag">★ MISSISSIPPI MUST SEE</span> &middot; ' : '';
+  const placeKicker = (p.placeType && PLACE_TYPE_LABELS[p.placeType]) ? '<p class="place-kicker">'+PLACE_TYPE_LABELS[p.placeType]+'</p>' : '';
+  const capitalBadge = p.isCapital ? '<span class="capital-star">MISSISSIPPI STATE CAPITAL</span><span class="meta-divider">·</span>' : '';
+  const mustSeeBadge = p.mustSee ? '<span class="must-see-tag">★ MISSISSIPPI MUST SEE</span><span class="meta-divider">·</span>' : '';
 
   panel.innerHTML =
     '<div class="sheet-handle" id="sheetHandle" role="button" tabindex="0" aria-label="Expand destination details"><div class="sheet-handle-bar"></div></div>'+
@@ -3994,7 +4014,9 @@ async function renderPanel(id){
     '<div class="panel-scroll">'+
     mediaBlock+
     '<div class="panel-body">'+
-      '<p class="panel-eyebrow">'+placeTypeBadge+mustSeeBadge+capitalBadge+(p.county?p.county+' County &middot; ':'')+region.label+'</p>'+
+      placeKicker+
+      '<p class="panel-eyebrow">'+mustSeeBadge+capitalBadge+'<span class="region-tag">'+region.label+'</span></p>'+
+      (p.county?'<p class="place-location">'+p.county+' County, Mississippi</p>':'')+
       '<h3 class="place-title">'+p.name+'</h3>'+
       '<p class="quick-overview">'+p.overview+'</p>'+
       stateButtonsHtml(p)+
