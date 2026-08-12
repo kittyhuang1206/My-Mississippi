@@ -3554,11 +3554,11 @@ function buildPins(){
 
 /* Markers keep a CONSTANT on-screen size regardless of zoom level — this is what
    prevents overlapping hit targets in dense clusters (Jackson/Ridgeland/Madison, etc). */
-const MARKER_SCREEN_H = 29;      // standard outlined/visited pins, slightly larger for easier scanning
-const HEART_SCREEN_H = 32;       // status markers should read instantly at statewide zoom
-const STAR_SCREEN_H = 29;
-const SELECTED_SCREEN_H = 37;
-const HIT_SCREEN_R = 22;         // generous 44px touch target without visually enlarging every pin
+const MARKER_SCREEN_H = 38;      // large, readable location pins at statewide zoom
+const HEART_SCREEN_H = 40;       // saved-state markers remain visually prominent
+const STAR_SCREEN_H = 36;
+const SELECTED_SCREEN_H = 46;
+const HIT_SCREEN_R = 27;         // 54px click/tap diameter for comfortable selection
 const CAPITAL_BONUS = 1.1;       // Jackson stays a touch larger than other pins, on top of the general bump
 
 function screenPxPerUserUnit(){
