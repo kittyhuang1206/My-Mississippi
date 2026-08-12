@@ -101,19 +101,27 @@
   .map-ctrl-btn svg{ width:17px; height:17px; }
   .back-pill{ position:absolute; left:14px; top:14px; z-index:5; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:8px 16px; font-size:12.5px; font-weight:700; box-shadow:var(--shadow); cursor:pointer; display:none; align-items:center; gap:6px; }
   .back-pill.show{ display:inline-flex; }
-  .legend-strip{ position:absolute; top:14px; right:14px; z-index:5; background:rgba(255,255,255,0.92); border-radius:12px; padding:8px 12px; font-size:10px; color:var(--ink-soft); font-weight:600; box-shadow:var(--shadow); max-width:260px; }
+  .legend-strip{ position:absolute; top:14px; right:14px; z-index:8; font-size:10px; color:var(--ink-soft); font-weight:600; }
+  .legend-toggle{ display:flex; align-items:center; gap:6px; margin-left:auto; height:38px; padding:0 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.97); color:var(--forest-deep); box-shadow:var(--shadow); font-size:11px; font-weight:800; cursor:pointer; }
+  .legend-toggle svg{ width:15px; height:15px; }
+  .legend-content{ display:none; width:260px; margin-top:7px; background:rgba(255,255,255,.97); border:1px solid var(--line); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow-lg); }
+  .legend-strip.open .legend-content{ display:block; animation:fadeUp .18s ease; }
+  .legend-strip.open .legend-toggle{ background:var(--forest); color:#fff; }
   .legend-row{ display:flex; gap:9px; flex-wrap:wrap; }
   .legend-row-2{ margin-top:6px; padding-top:6px; border-top:1px solid var(--line); gap:7px; }
   .legend-strip span{ display:flex; align-items:center; gap:4px; }
   .legend-region{ font-size:9px; }
   .legend-region i{ width:8px; height:8px; border-radius:2px; display:inline-block; }
-  @media (max-width:980px){ .legend-strip{ display:none; } }
+  @media (max-width:540px){ .legend-content{ width:min(260px,calc(100vw - 28px)); } }
 
-  .search-float{ position:absolute; top:14px; left:14px; z-index:9; width:min(300px,45%); display:flex; align-items:flex-start; gap:7px; }
+  .search-float{ position:absolute; top:14px; left:14px; z-index:9; width:38px; display:flex; align-items:flex-start; gap:7px; }
   .search-toggle{ flex:none; width:38px; height:38px; display:grid; place-items:center; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.97); color:var(--forest-deep); box-shadow:var(--shadow); cursor:grab; touch-action:none; }
   .search-toggle:active{ cursor:grabbing; }
   .search-toggle svg{ width:17px; height:17px; }
-  .search-content{ flex:1; min-width:0; position:relative; }
+  .search-content{ display:none; flex:1; min-width:0; position:relative; }
+  .search-float.search-open{ width:min(300px,calc(100% - 28px)); }
+  .search-float.search-open .search-content{ display:block; animation:fadeUp .18s ease; }
+  .search-float.search-open .search-toggle{ background:var(--forest); color:#fff; }
   .search-float input{ width:100%; padding:9px 12px; border-radius:12px; border:1px solid var(--line); background:rgba(255,255,255,0.97); font-size:12.5px; box-shadow:var(--shadow); }
   .search-float-results{ position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--paper); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow-lg); max-height:240px; overflow-y:auto; display:none; }
   .search-float-item{ width:100%; padding:8px 12px; border:0; background:transparent; color:var(--ink); text-align:left; font-size:12.5px; cursor:pointer; display:flex; justify-content:space-between; }
@@ -378,7 +386,9 @@
       <div class="places-drawer-head"><div><strong>Places</strong><span id="placesDrawerCount"></span></div><button id="placesClose" aria-label="Close destination list">✕</button></div>
       <div class="places-list" id="placesList"></div>
     </aside>
-    <div class="legend-strip">
+    <div class="legend-strip" id="legendStrip">
+      <button class="legend-toggle" id="legendToggle" aria-expanded="false" aria-controls="legendContent"><svg viewBox="0 0 24 24" fill="none"><path d="M5 6H19M5 12H19M5 18H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Map key</button>
+      <div class="legend-content" id="legendContent">
       <div class="legend-row">
         <span><svg width="11" height="14" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.5 0 10c0 7.5 10 16 10 16s10-8.5 10-16C20 4.5 15.5 0 10 0Z" fill="#FBF8F2" stroke="#667066" stroke-width="1.6"/><circle cx="10" cy="10" r="3.4" fill="#667066"/></svg> Unexplored</span>
         <span><svg width="13" height="12" viewBox="0 0 24 22"><path d="M12 21C12 21 2 14 2 7.5C2 4 4.7 1.5 8 1.5C10 1.5 12 3.3 12 3.3C12 3.3 14 1.5 16 1.5C19.3 1.5 22 4 22 7.5C22 14 12 21 12 21Z" fill="#C56E8F" stroke="#B05A79" stroke-width="0.8"/></svg> Want to Go</span>
@@ -391,6 +401,7 @@
         <span class="legend-region"><i style="background:#2C5A44"></i>Hills &amp; Prairie</span>
         <span class="legend-region"><i style="background:#3E7EA6"></i>Piney Woods</span>
         <span class="legend-region"><i style="background:#2E5F80"></i>Gulf Coast</span>
+      </div>
       </div>
     </div>
     <button class="back-pill" id="backPill">&larr; Back to all Mississippi</button>
@@ -3851,15 +3862,19 @@ function endSearchDrag(e){
 searchToggle.addEventListener("pointerup",endSearchDrag); searchToggle.addEventListener("pointercancel",endSearchDrag);
 searchToggle.addEventListener("click",()=>{
   if(suppressSearchClick){suppressSearchClick=false;return;}
-  if(mobileSearchMedia.matches)setSearchOpen(!searchFloat.classList.contains("search-open")); else searchInput.focus();
+  setSearchOpen(!searchFloat.classList.contains("search-open"));
 });
+const legendStrip=document.getElementById("legendStrip"),legendToggle=document.getElementById("legendToggle");
+const legendIcon='<svg viewBox="0 0 24 24" fill="none"><path d="M5 6H19M5 12H19M5 18H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function setLegendOpen(open){legendStrip.classList.toggle("open",open);legendToggle.setAttribute("aria-expanded",String(open));legendToggle.innerHTML=legendIcon+(open?" Close map key":" Map key");}
+legendToggle.addEventListener("click",()=>setLegendOpen(!legendStrip.classList.contains("open")));
 const filterFloatEl=document.getElementById("filterFloat"), filterSummaryEl=document.getElementById("filterSummary"), mapStageEl=document.getElementById("mapStage"), mapViewEl=document.getElementById("mapView");
 function syncResponsiveMapTools(){
   if(mobileSearchMedia.matches){
     mapStageEl.after(filterSummaryEl); mapStageEl.after(filterFloatEl);
     if(!searchFloat.classList.contains("search-open"))setSearchOpen(false);
   }else{
-    mapStageEl.append(filterSummaryEl,filterFloatEl); setSearchOpen(true);
+    mapStageEl.append(filterSummaryEl,filterFloatEl); setSearchOpen(false);
   }
   const pos=clampSearchPosition(parseFloat(searchFloat.style.left)||14,parseFloat(searchFloat.style.top)||14);
   searchFloat.style.left=pos.left+"px";searchFloat.style.top=pos.top+"px";
@@ -3880,11 +3895,14 @@ searchResults.addEventListener("click",(e)=>{
   else selectCounty(item.dataset.id);
   searchInput.value=""; searchResults.style.display="none";
 });
-document.addEventListener("click",(e)=>{ if(!e.target.closest(".search-float")){searchResults.style.display="none";if(mobileSearchMedia.matches)setSearchOpen(false);} });
+document.addEventListener("click",(e)=>{
+  if(!e.target.closest(".search-float")){searchResults.style.display="none";setSearchOpen(false);}
+  if(!e.target.closest(".legend-strip"))setLegendOpen(false);
+});
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape") return;
   searchResults.style.display="none"; searchInput.value="";
-  if(mobileSearchMedia.matches)setSearchOpen(false);
+  setSearchOpen(false); setLegendOpen(false);
   closeExplore(); setPlacesDrawer(false); closeSheet();
 });
 
