@@ -147,7 +147,7 @@
   .county-tooltip ul{ margin:4px 0 0; padding-left:16px; }
   .county-tooltip li{ margin-bottom:1px; }
 
-  .filter-float{ position:absolute; bottom:14px; left:50%; transform:translateX(-50%); z-index:6; display:flex; align-items:center; gap:6px; max-width:94%; background:rgba(255,255,255,0.96); border-radius:999px; padding:5px; box-shadow:var(--shadow-lg); }
+  .filter-float{ position:relative; z-index:6; display:flex; align-items:center; justify-content:center; gap:6px; width:fit-content; max-width:calc(100% - 28px); margin:12px auto 0; background:rgba(255,255,255,0.98); border:1px solid var(--line); border-radius:999px; padding:5px; box-shadow:var(--shadow); }
   .filter-chip{ background:transparent; border:none; border-radius:999px; padding:7px 13px; font-size:11.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; white-space:nowrap; flex:none; transition:background .15s ease,color .15s ease; }
   .filter-chip.active{ background:var(--forest-deep); color:#fff; }
   .filter-chip-star.active{ background:#C89A3D; color:#fff; }
@@ -156,14 +156,14 @@
   .filter-chip-explore{ border-left:1px solid var(--line); border-radius:0; margin-left:2px; padding-left:15px; }
   .filter-chip-explore.has-active{ color:var(--coral-deep); }
   .filter-count{ opacity:.72; font-family:'IBM Plex Mono',monospace; font-size:9px; }
-  .filter-summary{ position:absolute; bottom:60px; left:50%; transform:translateX(-50%); z-index:5; display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; max-width:90%; pointer-events:none; }
+  .filter-summary{ position:relative; z-index:5; display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; max-width:calc(100% - 28px); margin:7px auto 14px; pointer-events:none; }
   .filter-summary .result-count,.active-filter-chip{ background:rgba(255,255,255,.95); border:1px solid var(--line); border-radius:999px; padding:5px 9px; box-shadow:var(--shadow); font-size:10.5px; font-weight:700; color:var(--ink-soft); pointer-events:auto; }
   .active-filter-chip{ color:var(--coral-deep); cursor:pointer; }
   @media (max-width:980px){
     #mapView{ gap:10px; padding-bottom:12px; }
-    #mapView > .filter-float{ position:relative; inset:auto; transform:none; order:2; width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; justify-content:flex-start; border-radius:16px; box-shadow:var(--shadow); padding:6px; }
+    .filter-float{ width:calc(100% - 20px); max-width:none; overflow-x:auto; -webkit-overflow-scrolling:touch; justify-content:flex-start; border-radius:16px; padding:6px; }
     .filter-float::-webkit-scrollbar{ display:none; }
-    #mapView > .filter-summary{ position:relative; inset:auto; transform:none; order:3; max-width:100%; padding:0 4px; }
+    .filter-summary{ max-width:calc(100% - 20px); padding:0 4px; }
   }
   .explore-backdrop{ position:fixed; inset:0; background:rgba(20,30,20,0.28); z-index:19; opacity:0; pointer-events:none; transition:opacity .2s ease; }
   .explore-backdrop.open{ opacity:1; pointer-events:auto; }
@@ -3878,12 +3878,8 @@ function setLegendOpen(open){legendStrip.classList.toggle("open",open);legendTog
 legendToggle.addEventListener("click",()=>setLegendOpen(!legendStrip.classList.contains("open")));
 const filterFloatEl=document.getElementById("filterFloat"), filterSummaryEl=document.getElementById("filterSummary"), mapStageEl=document.getElementById("mapStage"), mapViewEl=document.getElementById("mapView");
 function syncResponsiveMapTools(){
-  if(mobileSearchMedia.matches){
-    mapStageEl.after(filterSummaryEl); mapStageEl.after(filterFloatEl);
-    if(!searchFloat.classList.contains("search-open"))setSearchOpen(false);
-  }else{
-    mapStageEl.append(filterSummaryEl,filterFloatEl); setSearchOpen(false);
-  }
+  mapViewEl.after(filterSummaryEl); mapViewEl.after(filterFloatEl);
+  if(!searchFloat.classList.contains("search-open"))setSearchOpen(false);
   const pos=clampSearchPosition(parseFloat(searchFloat.style.left)||14,parseFloat(searchFloat.style.top)||14);
   searchFloat.style.left=pos.left+"px";searchFloat.style.top=pos.top+"px";
 }
@@ -4354,6 +4350,8 @@ function switchView(v){
   currentView = v;
   document.querySelectorAll(".view-tab").forEach(t=>t.classList.toggle("active", t.dataset.view===v));
   document.getElementById("mapView").style.display = v==="map" ? "flex" : "none";
+  filterFloatEl.style.display = v==="map" ? "flex" : "none";
+  filterSummaryEl.style.display = v==="map" ? "flex" : "none";
   document.getElementById("journalView").style.display = v==="journal" ? "block" : "none";
   if(v==="journal") renderJournalView();
 }
