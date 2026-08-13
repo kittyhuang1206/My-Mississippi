@@ -42,6 +42,7 @@
   .drive-bar{ position:relative; }
   .drive-toggle{ display:inline-flex; align-items:center; gap:7px; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:7px 14px; font-size:12px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
   .drive-toggle svg{ width:14px; height:14px; }
+  .drive-toggle b{ display:none; font-size:21px; line-height:1; letter-spacing:2px; }
   .drive-panel{ display:none; position:absolute; top:calc(100% + 9px); right:0; z-index:60; width:min(580px,calc(100vw - 28px)); background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:var(--shadow-lg); }
   .drive-panel.open{ display:block; }
   .drive-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; }
@@ -159,10 +160,45 @@
   .filter-summary .result-count,.active-filter-chip{ background:rgba(255,255,255,.95); border:1px solid var(--line); border-radius:999px; padding:5px 9px; box-shadow:var(--shadow); font-size:10.5px; font-weight:700; color:var(--ink-soft); pointer-events:auto; }
   .active-filter-chip{ color:var(--coral-deep); cursor:pointer; }
   @media (max-width:980px){
+    html,body{ min-height:100vh; min-height:100dvh; }
+    body.map-mode{ height:100vh; height:100dvh; overflow:hidden; padding-top:env(safe-area-inset-top); }
+    .app-header{ height:76px; box-sizing:border-box; display:grid; grid-template-columns:1fr auto; grid-template-rows:36px 30px; gap:2px 8px; padding:5px max(10px,env(safe-area-inset-right)) 5px max(10px,env(safe-area-inset-left)); flex-wrap:nowrap; }
+    .brand{ grid-column:1; grid-row:1; gap:8px; min-width:0; }
+    .brand-mark{ width:32px; height:32px; }
+    .brand span.sub{ display:none; }
+    .brand h1{ font-size:17px; white-space:nowrap; }
+    .view-tabs{ grid-column:1 / 3; grid-row:2; justify-self:center; padding:2px; }
+    .view-tab{ min-height:28px; padding:4px 15px; }
+    .header-right{ grid-column:2; grid-row:1; margin:0; align-self:center; }
+    .drive-toggle{ width:44px; height:44px; justify-content:center; padding:0; border-radius:50%; box-shadow:none; }
+    .drive-toggle svg,.drive-toggle span{ display:none; }
+    .drive-toggle b{ display:block; }
+    .drive-panel{ top:calc(76px + env(safe-area-inset-top)); max-height:calc(100dvh - 88px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
+    #mapView{ height:calc(100vh - 76px - 58px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); height:calc(100dvh - 76px - 58px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height:0; padding:0 max(4px,env(safe-area-inset-right)) 0 max(4px,env(safe-area-inset-left)); }
     #mapView{ gap:10px; padding-bottom:12px; }
-    .filter-float{ width:calc(100% - 20px); max-width:none; overflow-x:auto; -webkit-overflow-scrolling:touch; justify-content:flex-start; border-radius:16px; padding:6px; }
+    .map-stage{ height:100%; min-height:0; border-radius:16px; box-shadow:0 8px 22px rgba(35,42,32,.10); }
+    .filter-float{ position:fixed; left:max(6px,env(safe-area-inset-left)); right:max(6px,env(safe-area-inset-right)); bottom:max(4px,env(safe-area-inset-bottom)); width:auto; max-width:none; height:50px; box-sizing:border-box; margin:0; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; justify-content:flex-start; flex-wrap:nowrap; border-radius:15px; padding:5px; z-index:18; }
     .filter-float::-webkit-scrollbar{ display:none; }
-    .filter-summary{ max-width:calc(100% - 20px); padding:0 4px; }
+    .filter-chip{ min-height:40px; padding:7px 12px; }
+    .filter-summary{ position:fixed; left:10px; right:10px; bottom:calc(58px + env(safe-area-inset-bottom)); max-width:none; margin:0; padding:0 4px; flex-wrap:nowrap; overflow:hidden; z-index:17; }
+    .filter-summary .active-filter-chip{ display:none; }
+    .search-toggle,.legend-toggle,.map-ctrl-btn{ min-width:44px; min-height:44px; }
+    .search-float{ top:10px; left:10px; width:44px; }
+    .search-toggle{ width:44px; height:44px; }
+    .search-float.search-open{ width:min(315px,calc(100% - 78px)); }
+    .search-float input{ min-height:44px; font-size:16px; }
+    .legend-strip{ top:10px; right:10px; }
+    .legend-toggle{ height:44px; }
+    .legend-content{ max-height:min(52dvh,360px); overflow:auto; }
+    .places-toggle{ min-height:44px; }
+    .places-drawer{ top:64px; left:10px; width:calc(100% - 20px); max-height:calc(100% - 78px); }
+    .places-drawer-head button{ width:44px; height:44px; }
+    .places-list{ -webkit-overflow-scrolling:touch; }
+    .place-list-item{ min-height:58px; }
+    .explore-panel{ position:fixed; left:max(8px,env(safe-area-inset-left)); right:max(8px,env(safe-area-inset-right)); bottom:calc(58px + env(safe-area-inset-bottom)); width:auto; max-height:min(72vh,620px); max-height:min(72dvh,620px); box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px 16px calc(14px + env(safe-area-inset-bottom)); border-radius:20px; transform:translateY(calc(100% + 80px)); opacity:1; }
+    .explore-panel.open{ transform:translateY(0); }
+    .explore-head button{ width:44px; height:44px; }
+    .explore-chip{ min-height:40px; }
   }
   .explore-backdrop{ position:fixed; inset:0; background:rgba(20,30,20,0.28); z-index:19; opacity:0; pointer-events:none; transition:opacity .2s ease; }
   .explore-backdrop.open{ opacity:1; pointer-events:auto; }
@@ -315,10 +351,10 @@
   .journal-empty-state{ text-align:center; padding:60px 20px; color:var(--ink-soft); }
 
   @media (max-width:980px){
-    .map-stage{ height:66vh; min-height:480px; }
+    .map-stage{ height:100%; min-height:0; }
     .search-float{ width:38px; }
     .search-float .search-content{ display:none; }
-    .search-float.search-open{ width:min(290px,calc(100% - 28px)); }
+    .search-float.search-open{ width:min(315px,calc(100% - 78px)); }
     .search-float.search-open .search-content{ display:block; animation:fadeUp .18s ease; }
     .search-float.search-open .search-toggle{ background:var(--forest); color:#fff; }
     .places-toggle{ margin-top:6px; }
@@ -327,11 +363,51 @@
     .side-panel-col.sheet-open.sheet-expanded{ transform:translateY(0); }
     .panel{ border-radius:22px 22px 0 0; height:100%; }
     .panel-scroll{ -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding-bottom:env(safe-area-inset-bottom); }
-    .sheet-handle{ display:flex; justify-content:center; padding:8px 0 2px; cursor:pointer; }
-    .sheet-handle-bar{ width:38px; height:5px; border-radius:3px; background:#D8D2C4; }
-    .sheet-close{ position:absolute; top:8px; right:10px; background:var(--mist); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; z-index:3; }
+    .sheet-handle{ display:flex; justify-content:center; align-items:center; min-height:44px; padding:0; cursor:pointer; }
+    .sheet-handle-bar{ width:46px; height:5px; border-radius:3px; background:#BEB6A7; }
+    .sheet-close{ position:absolute; top:7px; right:max(8px,env(safe-area-inset-right)); background:rgba(255,255,255,.9); border:none; border-radius:50%; width:44px; height:44px; cursor:pointer; z-index:5; box-shadow:var(--shadow); }
     .map-backdrop{ position:fixed; inset:0; background:rgba(20,30,20,0.3); z-index:90; opacity:0; pointer-events:none; transition:opacity .3s ease; }
     .map-backdrop.on{ opacity:1; pointer-events:auto; }
+  }
+  @media (max-width:980px){
+    .carousel{ height:clamp(200px,27dvh,240px); }
+    .carousel-arrow{ width:44px; height:44px; background:rgba(255,255,255,.78); box-shadow:none; }
+    .carousel-arrow.prev{ left:4px; } .carousel-arrow.next{ right:4px; }
+    .panel-body{ padding:14px 18px calc(22px + env(safe-area-inset-bottom)); }
+    .place-kicker{ margin-bottom:5px; }
+    .place-location{ margin-bottom:5px; }
+    .place-title{ margin-bottom:7px; }
+    .quick-overview{ line-height:1.48; margin-bottom:10px; }
+    .state-btn-row{ margin-bottom:12px; }
+    .state-btn{ min-height:48px; padding:10px 8px; }
+    .more-toggle{ min-height:44px; margin-bottom:8px; }
+    .journal-section summary{ min-height:44px; }
+    .journal-form textarea,.form-row input[type="date"]{ font-size:16px; }
+    .btn-save,.upload-btn{ min-height:44px; }
+    #journalView{ padding:6px 12px calc(70px + env(safe-area-inset-bottom)); }
+    .journal-hero{ padding:6px 0 16px; }
+    .journal-hero h2{ font-size:24px; }
+    .journal-tools{ flex-wrap:wrap; }
+    .journal-tool,.gm-link,.memory-actions button{ min-height:44px; align-items:center; }
+    .global-memory-card{ padding:13px; box-shadow:0 4px 14px rgba(35,42,32,.08); }
+    .memory-photos{ grid-template-columns:repeat(2,1fr); }
+    .memory-photos img{ height:110px; }
+  }
+  @media (max-width:980px) and (max-height:720px){
+    .carousel{ height:200px; }
+    .panel-body{ padding-top:14px; }
+  }
+  @media (max-width:980px) and (orientation:landscape){
+    .app-header{ height:52px; grid-template-columns:1fr auto auto; grid-template-rows:1fr; padding-block:4px; }
+    .brand{ grid-column:1; grid-row:1; }
+    .view-tabs{ grid-column:2; grid-row:1; }
+    .header-right{ grid-column:3; grid-row:1; }
+    #mapView{ height:calc(100dvh - 52px - 50px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+    .filter-float{ height:44px; }
+    .filter-chip{ min-height:34px; }
+    .side-panel-col{ left:auto; width:min(54vw,500px); height:calc(100dvh - env(safe-area-inset-top)); }
+    .side-panel-col.sheet-open{ transform:translateY(0); }
+    .carousel{ height:180px; }
   }
   @media (min-width:981px){ .sheet-handle, .sheet-close, .map-backdrop{ display:none; } }
 
@@ -353,7 +429,7 @@
   </div>
   <div class="header-right">
   <div class="drive-bar">
-  <button class="drive-toggle" id="driveToggle" aria-expanded="false" aria-controls="drivePanel"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L7 7H17L20 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/><circle cx="16.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/></svg> Plan a Drive</button>
+  <button class="drive-toggle" id="driveToggle" aria-label="Plan a Drive" aria-expanded="false" aria-controls="drivePanel"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L7 7H17L20 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/><circle cx="16.5" cy="17" r="1.5" stroke="currentColor" stroke-width="1.6"/></svg><span>Plan a Drive</span><b aria-hidden="true">⋯</b></button>
   <div class="drive-panel" id="drivePanel" aria-label="Trip planner">
     <div class="drive-head"><div><strong>Build your Mississippi drive</strong><span>Add stops here without covering the discovery map.</span></div><button class="drive-close" id="driveClose" aria-label="Close trip planner">✕</button></div>
     <div class="drive-stops" id="driveStops"></div>
@@ -3388,7 +3464,8 @@ const PLACES = RAW_PLACES.map(p => {
   // photoPriority reflects "worth exploring", not city size — explicit featured towns keep
   // their own priority; everything else falls back to its tier as a reasonable default.
   const photoPriority = p.photoPriority || (p.tier===1 ? "A" : p.tier===2 ? "B" : "C");
-  return Object.assign({}, p, { photos, photoPriority });
+  const thumbnail = photos[0] ? "assets/thumbs/"+p.id+".webp" : null;
+  return Object.assign({}, p, { photos, photoPriority, thumbnail });
 });
 const PLACE_POINTS = new Map(PLACES.map(p => [p.id, project(p.lat,p.lon)]));
 
@@ -4097,7 +4174,8 @@ function renderPlacesList(places){
   const sorted = places.slice().sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById("placesDrawerCount").textContent = ' · '+sorted.length+' shown';
   document.getElementById("placesList").innerHTML = sorted.length ? sorted.map(p=>{
-    const thumb = p.photos[0] ? '<img class="place-list-thumb" src="'+p.photos[0].src+'" alt="" loading="lazy">' : '<span class="place-list-thumb"></span>';
+    const thumbSrc = p.thumbnail || (p.photos[0] && p.photos[0].src);
+    const thumb = thumbSrc ? '<img class="place-list-thumb" src="'+thumbSrc+'" data-fallback="'+(p.photos[0]?p.photos[0].src:"")+'" alt="" loading="lazy" decoding="async" onerror="if(this.dataset.fallback&&this.src.indexOf(this.dataset.fallback)<0){this.src=this.dataset.fallback}else{this.style.display=\'none\'}">' : '<span class="place-list-thumb"></span>';
     const state = isVisited(p.id) ? '✓' : isWant(p.id) ? '♥' : p.mustSee ? '★' : '→';
     return '<button class="place-list-item" data-place-id="'+p.id+'">'+thumb+'<span class="place-list-copy"><strong>'+p.name+'</strong><small>'+p.county+' County · '+REGIONS[p.region].label+'</small></span><span class="place-list-state" aria-hidden="true">'+state+'</span></button>';
   }).join("") : '<p class="journal-empty-note" style="padding:14px">No places match these filters.</p>';
@@ -4188,7 +4266,8 @@ function setLegendOpen(open){legendStrip.classList.toggle("open",open);legendTog
 legendToggle.addEventListener("click",()=>setLegendOpen(!legendStrip.classList.contains("open")));
 const filterFloatEl=document.getElementById("filterFloat"), filterSummaryEl=document.getElementById("filterSummary"), mapStageEl=document.getElementById("mapStage"), mapViewEl=document.getElementById("mapView");
 function syncResponsiveMapTools(){
-  mapViewEl.after(filterSummaryEl); mapViewEl.after(filterFloatEl);
+  if(mobileSearchMedia.matches){ mapStageEl.append(filterSummaryEl,filterFloatEl); }
+  else { mapViewEl.after(filterSummaryEl); mapViewEl.after(filterFloatEl); }
   if(!searchFloat.classList.contains("search-open"))setSearchOpen(false);
   searchFloat.style.removeProperty("left");
   searchFloat.style.removeProperty("top");
@@ -4274,8 +4353,8 @@ function renderCarousel(photos, startIndex){
   const dotsWrap = document.getElementById("carouselDots");
   const countEl = document.getElementById("carouselCount");
   if(!track) return;
-  track.innerHTML = photos.map(ph => '<div class="carousel-slide">'+
-    '<img src="'+ph.src+'" data-src="'+ph.src+'" alt="'+ph.alt+'" loading="lazy" style="object-position:'+(ph.objectPosition||"50% 50%")+'" onerror="handlePhotoError(this)">'+
+  track.innerHTML = photos.map((ph,i) => '<div class="carousel-slide">'+
+    '<img '+(i===carouselIndex?'src="'+ph.src+'" fetchpriority="high"':'data-src="'+ph.src+'"')+' alt="'+ph.alt+'" loading="'+(i===carouselIndex?'eager':'lazy')+'" decoding="async" style="object-position:'+(ph.objectPosition||"50% 50%")+'" onerror="handlePhotoError(this)">'+
     (ph.caption?'<div class="cap">'+ph.caption+(ph.credit?' <span class="photo-credit">· '+ph.credit+'</span>':'')+(ph.sourceUrl?' <a class="photo-source-link" href="'+ph.sourceUrl+'" target="_blank" rel="noopener">Source ↗</a>':'')+'</div>':'')+
     '</div>').join("");
   dotsWrap.innerHTML = photos.map((_,i)=>'<button class="carousel-dot'+(i===0?' active':'')+'" data-i="'+i+'"></button>').join("");
@@ -4285,15 +4364,16 @@ function renderCarousel(photos, startIndex){
   document.getElementById("carNext").onclick = ()=> goToSlide((carouselIndex+1)%photos.length, photos.length);
   dotsWrap.querySelectorAll(".carousel-dot").forEach(d=> d.onclick = ()=> goToSlide(parseInt(d.dataset.i,10), photos.length));
   const carEl = document.getElementById("carouselEl");
-  let sx=null;
-  carEl.ontouchstart = e=>{ sx=e.touches[0].clientX; };
-  carEl.ontouchend = e=>{ if(sx===null) return; const dx=e.changedTouches[0].clientX-sx; if(Math.abs(dx)>40){ dx>0?goToSlide((carouselIndex-1+photos.length)%photos.length,photos.length):goToSlide((carouselIndex+1)%photos.length,photos.length); } sx=null; };
+  let sx=null,sy=null;
+  carEl.ontouchstart = e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; };
+  carEl.ontouchend = e=>{ if(sx===null) return; const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy; if(Math.abs(dx)>44&&Math.abs(dx)>Math.abs(dy)*1.25){ dx>0?goToSlide((carouselIndex-1+photos.length)%photos.length,photos.length):goToSlide((carouselIndex+1)%photos.length,photos.length); } sx=sy=null; };
   carEl.tabIndex=0;
   carEl.onkeydown = e=>{ if(e.key==="ArrowLeft") goToSlide((carouselIndex-1+photos.length)%photos.length,photos.length); if(e.key==="ArrowRight") goToSlide((carouselIndex+1)%photos.length,photos.length); };
 }
 function goToSlide(i,total){
   carouselIndex=i;
   const track=document.getElementById("carouselTrack"); if(track) track.style.transform="translateX(-"+(i*100)+"%)";
+  if(track){ [i,(i+1)%total,(i-1+total)%total].forEach(idx=>{ const img=track.children[idx]&&track.children[idx].querySelector("img[data-src]"); if(img){img.src=img.dataset.src;img.removeAttribute("data-src");} }); }
   const dotsWrap=document.getElementById("carouselDots"); if(dotsWrap) dotsWrap.querySelectorAll(".carousel-dot").forEach((d,idx)=>d.classList.toggle("active",idx===i));
   const countEl=document.getElementById("carouselCount"); if(countEl) countEl.textContent=(i+1)+" / "+total;
 }
@@ -4658,6 +4738,7 @@ document.getElementById("importJournalInput").addEventListener("change",async e=
 
 function switchView(v){
   currentView = v;
+  document.body.classList.toggle("map-mode",v==="map");
   document.querySelectorAll(".view-tab").forEach(t=>t.classList.toggle("active", t.dataset.view===v));
   document.getElementById("mapView").style.display = v==="map" ? "flex" : "none";
   filterFloatEl.style.display = v==="map" ? "flex" : "none";
@@ -4672,6 +4753,7 @@ document.querySelectorAll(".view-tab").forEach(tab=> tab.addEventListener("click
 /* =================================================================== */
 
 async function init(){
+  document.body.classList.add("map-mode");
   buildGeo();
   buildCounties();
   buildPins();
