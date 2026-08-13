@@ -322,10 +322,11 @@
     .search-float.search-open .search-content{ display:block; animation:fadeUp .18s ease; }
     .search-float.search-open .search-toggle{ background:var(--forest); color:#fff; }
     .places-toggle{ margin-top:6px; }
-    .side-panel-col{ position:fixed; left:0; right:0; bottom:0; top:auto; max-height:88vh; z-index:100; transform:translateY(100%); transition:transform .3s ease; }
-    .side-panel-col.sheet-open{ transform:translateY(0); animation:sheetUp .3s ease; }
-    .panel{ border-radius:22px 22px 0 0; height:58vh; transition:height .25s ease; }
-    .side-panel-col.sheet-expanded .panel{ height:88vh; }
+    .side-panel-col{ position:fixed; left:0; right:0; bottom:0; top:auto; height:88vh; height:88dvh; z-index:100; transform:translateY(100%); transition:transform .3s ease; will-change:transform; }
+    .side-panel-col.sheet-open{ transform:translateY(30vh); transform:translateY(30dvh); }
+    .side-panel-col.sheet-open.sheet-expanded{ transform:translateY(0); }
+    .panel{ border-radius:22px 22px 0 0; height:100%; }
+    .panel-scroll{ -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding-bottom:env(safe-area-inset-bottom); }
     .sheet-handle{ display:flex; justify-content:center; padding:8px 0 2px; cursor:pointer; }
     .sheet-handle-bar{ width:38px; height:5px; border-radius:3px; background:#D8D2C4; }
     .sheet-close{ position:absolute; top:8px; right:10px; background:var(--mist); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; z-index:3; }
@@ -3389,6 +3390,7 @@ const PLACES = RAW_PLACES.map(p => {
   const photoPriority = p.photoPriority || (p.tier===1 ? "A" : p.tier===2 ? "B" : "C");
   return Object.assign({}, p, { photos, photoPriority });
 });
+const PLACE_POINTS = new Map(PLACES.map(p => [p.id, project(p.lat,p.lon)]));
 
 /* =================================================================== */
 /* MARKER (classic map pin, not a raindrop)                            */
@@ -3520,15 +3522,31 @@ function clampView(v){
   v.ty = Math.max(-maxPanY, Math.min(80, v.ty));
   return v;
 }
-function applyView(animate){
+function applyCameraTransform(animate){
   clampView(view);
   const t = "translate("+view.tx.toFixed(2)+","+view.ty.toFixed(2)+") scale("+view.scale.toFixed(3)+")";
   zoomG.style.transition = animate ? "transform .5s cubic-bezier(.2,.7,.3,1)" : "none";
   zoomG.setAttribute("transform", t);
+}
+function refreshCameraUI(){
   refreshMarkerScale();
   refreshLabelVisibility();
   refreshCountyVisibility();
   backPill.classList.toggle("show", view.scale > 1.15);
+}
+function applyView(animate){
+  applyCameraTransform(animate);
+  refreshCameraUI();
+}
+let cameraFrame = 0;
+function scheduleCameraRender(){
+  if(cameraFrame) return;
+  cameraFrame = requestAnimationFrame(()=>{ cameraFrame=0; applyCameraTransform(false); });
+}
+function finishCameraGesture(){
+  if(cameraFrame){ cancelAnimationFrame(cameraFrame); cameraFrame=0; }
+  applyCameraTransform(false);
+  refreshCameraUI();
 }
 function setView(scale, cx, cy, animate){
   view.scale = scale; view.tx = PROJ.W/2 - cx*scale; view.ty = PROJ.H/2 - cy*scale;
@@ -3536,8 +3554,8 @@ function setView(scale, cx, cy, animate){
 }
 function resetView(){ activeCounty=null; refreshCountyVisibility(); setView(1, PROJ.W/2, PROJ.H/2, true); }
 
-function screenToUser(clientX, clientY){
-  const rect = svgEl.getBoundingClientRect();
+function screenToUser(clientX, clientY, rect){
+  rect = rect || svgEl.getBoundingClientRect();
   const svgX = (clientX-rect.left)/rect.width*PROJ.W, svgY = (clientY-rect.top)/rect.height*PROJ.H;
   return { x:(svgX-view.tx)/view.scale, y:(svgY-view.ty)/view.scale };
 }
@@ -3561,27 +3579,42 @@ let activePointers = new Map();
 let panState = { active:false, moved:false, startX:0, startY:0, lastX:0, lastY:0 };
 let pinchState = null;
 let pressIntent = null;
+let gestureRect = null;
+
+function mapViewportMetrics(){
+  const rect = svgEl.getBoundingClientRect();
+  const pxPerUnit = Math.min(rect.width/PROJ.W, rect.height/PROJ.H);
+  return { rect, pxPerUnit, offsetX:(rect.width-PROJ.W*pxPerUnit)/2, offsetY:(rect.height-PROJ.H*pxPerUnit)/2 };
+}
 
 function interactionIntent(target, clientX, clientY){
-  // Resolve dense clusters by choosing the nearest visible marker center instead of
-  // whichever overlapping SVG hit circle happens to be last in DOM order.
-  let pin = null, nearest = Infinity;
-  document.querySelectorAll(".pin:not(.filtered-out)").forEach(candidate=>{
-    if(candidate.style.display==="none") return;
-    const hit = candidate.querySelector(".pin-hit"); if(!hit) return;
-    const rect = hit.getBoundingClientRect();
-    const dx = clientX-(rect.left+rect.width/2), dy = clientY-(rect.top+rect.height/2);
-    const distance = Math.hypot(dx,dy);
-    if(distance <= HIT_SCREEN_R+4 && distance < nearest){ nearest=distance; pin=candidate; }
+  // Project cached place coordinates into screen space; no per-marker layout reads.
+  const metrics = mapViewportMetrics();
+  const localX = clientX-metrics.rect.left-metrics.offsetX;
+  const localY = clientY-metrics.rect.top-metrics.offsetY;
+  const hitRadius = window.innerWidth<=980 ? 44 : HIT_SCREEN_R+4;
+  let nearestId = null, nearest = Infinity;
+  PLACES.forEach(p=>{
+    const pin = document.getElementById("pin-"+p.id);
+    if(!pin || pin.style.display==="none" || pin.classList.contains("filtered-out")) return;
+    const point = PLACE_POINTS.get(p.id);
+    const sx = (point.x*view.scale+view.tx)*metrics.pxPerUnit;
+    let sy = (point.y*view.scale+view.ty)*metrics.pxPerUnit;
+    if(pin.dataset.kind!=="want" && pin.dataset.kind!=="mustseestar"){
+      const markerHeight = (p.id===activeId ? SELECTED_SCREEN_H : MARKER_SCREEN_H) * (p.isCapital ? CAPITAL_BONUS : 1);
+      sy -= markerHeight*16/26;
+    }
+    const distance = Math.hypot(localX-sx,localY-sy);
+    if(distance<=hitRadius && distance<nearest){ nearest=distance; nearestId=p.id; }
   });
-  if(!pin) pin = target.closest && target.closest(".pin");
-  if(pin) return { type:"place", id:pin.id.replace(/^pin-/, "") };
+  if(nearestId) return { type:"place", id:nearestId };
   const county = target.closest && target.closest(".county-fill, .county-line");
   if(county) return { type:"county", name:county.dataset.county };
   return null;
 }
 
 svgWrap.addEventListener("pointerdown", (e)=>{
+  if(activePointers.size===0) gestureRect = svgEl.getBoundingClientRect();
   activePointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
   if(activePointers.size===1){
     panState.active = true; panState.moved = false;
@@ -3610,21 +3643,20 @@ svgWrap.addEventListener("pointermove", (e)=>{
       svgWrap.classList.add("grabbing");
       if(!svgWrap.hasPointerCapture(e.pointerId)) svgWrap.setPointerCapture(e.pointerId);
     }
-    const rect = svgEl.getBoundingClientRect();
-    const dx = (e.clientX-panState.lastX)/rect.width*PROJ.W, dy = (e.clientY-panState.lastY)/rect.height*PROJ.H;
+    const dx = (e.clientX-panState.lastX)/gestureRect.width*PROJ.W, dy = (e.clientY-panState.lastY)/gestureRect.height*PROJ.H;
     view.tx += dx; view.ty += dy;
     panState.lastX = e.clientX; panState.lastY = e.clientY;
-    applyView(false);
+    scheduleCameraRender();
   } else if(activePointers.size===2 && pinchState){
     const pts = [...activePointers.values()];
     const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
     const midX = (pts[0].x+pts[1].x)/2, midY = (pts[0].y+pts[1].y)/2;
-    const pt = screenToUser(midX, midY);
+    const pt = screenToUser(midX, midY, gestureRect);
     const newScale = Math.max(VIEW_MIN, Math.min(getViewMax(), pinchState.startScale*(dist/pinchState.startDist)));
     view.tx = view.tx + pt.x*view.scale - pt.x*newScale;
     view.ty = view.ty + pt.y*view.scale - pt.y*newScale;
     view.scale = newScale;
-    applyView(false);
+    scheduleCameraRender();
   }
 });
 function endPointer(e, cancelled){
@@ -3637,6 +3669,8 @@ function endPointer(e, cancelled){
     panState.active = false;
     svgWrap.classList.remove("grabbing");
     panState.moved = false; pressIntent = null;
+    gestureRect = null;
+    finishCameraGesture();
     if(intent && intent.type==="place") selectPlace(intent.id);
     else if(intent && intent.type==="county") selectCounty(intent.name);
   }
