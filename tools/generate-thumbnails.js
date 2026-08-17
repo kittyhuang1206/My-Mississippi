@@ -19,7 +19,7 @@ const sourceByPlace = {
   columbia:"columbia-c4f5379a1e1a.jpg", drew:"drew-waterfowl-sign.jpg",
   ellisville:"ellisville-historic-downtown.jpeg", fayette:"fayette-welcome-sign.jpg",
   forest:"forest-d63e781edf36.jpg", flowood:"flowood-winners-circle-park.jpg", gautier:"gautier-waterfront-home.jpg", grenada:"grenada-welcome-sign.jpg", greenville:"destination-019-c2df9611ef0c.jpg",
-  gulfport:"destination-026-2d96b6aeed9d.jpg", hattiesburg:"destination-010-1df6c9154ed4.jpg",
+  gulfport:"destination-026-2d96b6aeed9d.jpg", hattiesburg:"destination-010-1df6c9154ed4.jpg", hernando:"hernando-historic-sign.jpg",
   "infinity-science-center":"infinity-building-exterior.webp", jackson:"destination-001-f0b70762c74c.jpg",
   louisville:"louisville-40afbe86921a.jpg", magee:"magee-ff3b9007a72c.jpg",
   mccomb:"destination-038-ee85aa2e369c.jpg", "mound-bayou":"mound-bayou-historic.jpg",
