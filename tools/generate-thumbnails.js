@@ -20,7 +20,7 @@ const sourceByPlace = {
   ellisville:"ellisville-historic-downtown.jpeg", fayette:"fayette-welcome-sign.jpg",
   forest:"forest-d63e781edf36.jpg", flowood:"flowood-winners-circle-park.jpg", gautier:"gautier-waterfront-home.jpg", grenada:"grenada-welcome-sign.jpg", greenville:"destination-019-c2df9611ef0c.jpg",
   gulfport:"destination-026-2d96b6aeed9d.jpg", hattiesburg:"destination-010-1df6c9154ed4.jpg", hernando:"hernando-historic-sign.jpg", "holly-springs":"holly-springs-mural.jpg", "horn-lake":"horn-lake-cypress-water.jpg",
-  "infinity-science-center":"infinity-building-exterior.webp", jackson:"destination-001-f0b70762c74c.jpg",
+  "infinity-science-center":"infinity-building-exterior.webp", indianola:"indianola-bb-king-mural.jpeg", jackson:"destination-001-f0b70762c74c.jpg",
   louisville:"louisville-40afbe86921a.jpg", magee:"magee-ff3b9007a72c.jpg",
   mccomb:"destination-038-ee85aa2e369c.jpg", "mound-bayou":"mound-bayou-historic.jpg",
   natchez:"destination-013-2b9c0e811bab.jpg", "new-albany":"new-albany-0f5d8b07f3ab.jpg",
