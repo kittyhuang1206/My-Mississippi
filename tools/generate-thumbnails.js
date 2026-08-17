@@ -27,7 +27,7 @@ const sourceByPlace = {
   "ocean-springs":"destination-029-ba535c6e4521.jpg", "olive-branch":"olive-branch-c79a1f77d9ff.jpg",
   oxford:"destination-007-604692dd578a.jpg", "pass-christian":"pass-christian-harbor.jpg", pascagoula:"pascagoula-293360f529a3.jpg", pearl:"pearl-outlets-of-mississippi.jpg", petal:"petal-welcome-sign.jpeg", picayune:"picayune-welcome-sign.jpg", pontotoc:"pontotoc-county-courthouse.jpg", poplarville:"poplarville-welcome-sign.jpg",
   raymond:"raymond-mural.jpg", "red-bluff":"red-bluff-canyon.webp", ridgeland:"ridgeland-mural.jpg",
-  rosedale:"rosedale-d584574a4013.jpg", tupelo:"destination-004-5bd6b0ac355c.jpg",
+  rosedale:"rosedale-d584574a4013.jpg", sardis:"sardis-water-tower.jpg", tupelo:"destination-004-5bd6b0ac355c.jpg",
   vicksburg:"destination-016-b7e020604d60.jpg", yazoocity:"yazoo-city-colorful-downtown.jpg"
 };
 
