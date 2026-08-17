@@ -23,7 +23,7 @@ const sourceByPlace = {
   "infinity-science-center":"infinity-building-exterior.webp", indianola:"indianola-bb-king-mural.jpeg", iuka:"iuka-historic-downtown.webp", jackson:"destination-001-f0b70762c74c.jpg",
   kosciusko:"kosciusko-downtown-shops.jpg", "long-beach":"long-beach-harbor-monument.jpeg", louisville:"louisville-40afbe86921a.jpg", lucedale:"lucedale-george-county-courthouse.jpg", madison:"madison-historic-gateway.jpg", magee:"magee-ff3b9007a72c.jpg",
   mccomb:"destination-038-ee85aa2e369c.jpg", "mound-bayou":"mound-bayou-historic.jpg",
-  natchez:"destination-013-2b9c0e811bab.jpg", "new-albany":"new-albany-0f5d8b07f3ab.jpg",
+  natchez:"destination-013-2b9c0e811bab.jpg", "new-albany":"new-albany-0f5d8b07f3ab.jpg", newton:"newton-city-hall.jpg",
   "ocean-springs":"destination-029-ba535c6e4521.jpg", "olive-branch":"olive-branch-c79a1f77d9ff.jpg",
   oxford:"destination-007-604692dd578a.jpg", pascagoula:"pascagoula-293360f529a3.jpg",
   raymond:"raymond-mural.jpg", "red-bluff":"red-bluff-canyon.webp", ridgeland:"ridgeland-mural.jpg",
