@@ -25,7 +25,7 @@ const sourceByPlace = {
   mccomb:"destination-038-ee85aa2e369c.jpg", "mound-bayou":"mound-bayou-historic.jpg",
   natchez:"destination-013-2b9c0e811bab.jpg", "new-albany":"new-albany-0f5d8b07f3ab.jpg", newton:"newton-city-hall.jpg",
   "ocean-springs":"destination-029-ba535c6e4521.jpg", "olive-branch":"olive-branch-c79a1f77d9ff.jpg",
-  oxford:"destination-007-604692dd578a.jpg", "pass-christian":"pass-christian-harbor.jpg", pascagoula:"pascagoula-293360f529a3.jpg",
+  oxford:"destination-007-604692dd578a.jpg", "pass-christian":"pass-christian-harbor.jpg", pascagoula:"pascagoula-293360f529a3.jpg", pearl:"pearl-outlets-of-mississippi.jpg",
   raymond:"raymond-mural.jpg", "red-bluff":"red-bluff-canyon.webp", ridgeland:"ridgeland-mural.jpg",
   rosedale:"rosedale-d584574a4013.jpg", tupelo:"destination-004-5bd6b0ac355c.jpg",
   vicksburg:"destination-016-b7e020604d60.jpg", yazoocity:"yazoo-city-colorful-downtown.jpg"
