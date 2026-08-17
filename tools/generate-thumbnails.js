@@ -21,7 +21,7 @@ const sourceByPlace = {
   forest:"forest-d63e781edf36.jpg", flowood:"flowood-winners-circle-park.jpg", gautier:"gautier-waterfront-home.jpg", grenada:"grenada-welcome-sign.jpg", greenville:"destination-019-c2df9611ef0c.jpg",
   gulfport:"destination-026-2d96b6aeed9d.jpg", hattiesburg:"destination-010-1df6c9154ed4.jpg", hernando:"hernando-historic-sign.jpg", "holly-springs":"holly-springs-mural.jpg", "horn-lake":"horn-lake-cypress-water.jpg",
   "infinity-science-center":"infinity-building-exterior.webp", indianola:"indianola-bb-king-mural.jpeg", iuka:"iuka-historic-downtown.webp", jackson:"destination-001-f0b70762c74c.jpg",
-  kosciusko:"kosciusko-downtown-shops.jpg", louisville:"louisville-40afbe86921a.jpg", magee:"magee-ff3b9007a72c.jpg",
+  kosciusko:"kosciusko-downtown-shops.jpg", "long-beach":"long-beach-harbor-monument.jpeg", louisville:"louisville-40afbe86921a.jpg", magee:"magee-ff3b9007a72c.jpg",
   mccomb:"destination-038-ee85aa2e369c.jpg", "mound-bayou":"mound-bayou-historic.jpg",
   natchez:"destination-013-2b9c0e811bab.jpg", "new-albany":"new-albany-0f5d8b07f3ab.jpg",
   "ocean-springs":"destination-029-ba535c6e4521.jpg", "olive-branch":"olive-branch-c79a1f77d9ff.jpg",
