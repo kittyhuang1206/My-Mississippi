@@ -15,7 +15,7 @@ const sourceByPlace = {
   brandon:"brandon-welcome-mural.webp", brookhaven:"brookhaven-ab376da5fcf6.jpg",
   byhalia:"byhalia-welcome.webp", canton:"destination-035-f96964eab14c.jpg",
   carthage:"carthage-courthouse.jpg", charleston:"charleston-welcome-sign.jpeg",
-  clinton:"clinton-welcome-sign.jpg", collins:"collins-grand-paradise-waterpark.jpg",
+  clinton:"clinton-welcome-sign.jpg", collins:"collins-grand-paradise-waterpark.jpg", como:"como-safari-giraffe.jpg",
   columbia:"columbia-c4f5379a1e1a.jpg", drew:"drew-waterfowl-sign.jpg",
   ellisville:"ellisville-historic-downtown.jpeg", fayette:"fayette-welcome-sign.jpg",
   forest:"forest-d63e781edf36.jpg", flowood:"flowood-winners-circle-park.jpg", gautier:"gautier-waterfront-home.jpg", grenada:"grenada-welcome-sign.jpg", greenville:"destination-019-c2df9611ef0c.jpg",
