@@ -4067,15 +4067,16 @@ let dbPromise = null;
 function openDB(){
   if(dbPromise) return dbPromise;
   dbPromise = new Promise((resolve,reject)=>{
-    if(!('indexedDB' in window)){ reject(new Error("no idb")); return; }
+    if(!('indexedDB' in window)){ dbPromise=null; reject(new Error("no idb")); return; }
     const req = indexedDB.open("myMississippiDB", 1);
     req.onupgradeneeded = e => { const db=e.target.result; if(!db.objectStoreNames.contains("entries")){ db.createObjectStore("entries",{keyPath:"id"}).createIndex("placeId","placeId",{unique:false}); } };
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror = e => reject(e.target.error);
+    req.onsuccess = e => { const db=e.target.result; db.onversionchange=()=>db.close(); resolve(db); };
+    req.onerror = e => { dbPromise=null; reject(e.target.error); };
+    req.onblocked = () => { dbPromise=null; reject(new Error("database blocked")); };
   });
   return dbPromise;
 }
-async function dbAdd(entry){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction("entries","readwrite"); tx.objectStore("entries").put(entry); tx.oncomplete=()=>res(entry); tx.onerror=()=>rej(tx.error); }); }
+async function dbAdd(entry){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction("entries","readwrite"); tx.objectStore("entries").put(entry); tx.oncomplete=()=>res(entry); tx.onerror=()=>rej(tx.error||new Error("save failed")); tx.onabort=()=>rej(tx.error||new Error("save aborted")); }); }
 async function dbDelete(id){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction("entries","readwrite"); tx.objectStore("entries").delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
 async function dbGetAll(){ try{ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction("entries","readonly"); const r=tx.objectStore("entries").getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>rej(r.error); }); }catch(e){ return []; } }
 function uid(){ return 'e_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
@@ -5079,13 +5080,62 @@ function showToast(msg){
   setTimeout(()=> t.remove(), 2600);
 }
 
+const JOURNAL_PHOTO_MAX_EDGE = 1280;
+const JOURNAL_PHOTO_QUALITY = .70;
+function readPhotoSource(file){
+  return new Promise((resolve,reject)=>{ const reader=new FileReader(); reader.onload=()=>resolve(reader.result); reader.onerror=()=>reject(reader.error); reader.readAsDataURL(file); });
+}
+function resizePhotoSource(source,maxEdge=JOURNAL_PHOTO_MAX_EDGE,quality=JOURNAL_PHOTO_QUALITY){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const scale=Math.min(1,maxEdge/Math.max(img.naturalWidth,img.naturalHeight));
+        const canvas=document.createElement("canvas");
+        canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+        canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+        const ctx=canvas.getContext("2d",{alpha:false});
+        ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL("image/jpeg",quality));
+      }catch(err){ reject(err); }
+    };
+    img.onerror=()=>reject(new Error("photo could not be decoded"));
+    img.src=source;
+  });
+}
 async function compressPhoto(file){
-  const source = await new Promise((resolve,reject)=>{ const reader=new FileReader(); reader.onload=()=>resolve(reader.result); reader.onerror=()=>reject(reader.error); reader.readAsDataURL(file); });
-  const img = await new Promise((resolve,reject)=>{ const el=new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=source; });
-  const max=1600, scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
-  const canvas=document.createElement("canvas"); canvas.width=Math.max(1,Math.round(img.naturalWidth*scale)); canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
-  canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
-  return canvas.toDataURL("image/jpeg",.82);
+  const source = await readPhotoSource(file);
+  return resizePhotoSource(source);
+}
+function isStorageQuotaError(err){
+  const name=(err&&err.name)||"", message=(err&&err.message)||"";
+  return /QuotaExceeded|NS_ERROR_DOM_QUOTA|quota|disk|space/i.test(name+" "+message);
+}
+async function compactPhotos(photos,maxEdge=900,quality=.56){
+  const compacted=[];
+  for(const source of photos){
+    if(typeof source==="string" && source.startsWith("data:image/")) compacted.push(await resizePhotoSource(source,maxEdge,quality));
+    else compacted.push(source);
+  }
+  return compacted;
+}
+async function requestDurableStorage(){
+  try{ if(navigator.storage && navigator.storage.persist) await navigator.storage.persist(); }catch(err){}
+}
+async function optimizeOversizedJournalPhotos(){
+  for(const entry of allEntries){
+    const photos=entry.photos||[];
+    if(!photos.some(src=>typeof src==="string" && src.length>450000)) continue;
+    try{
+      const optimized=await compactPhotos(photos,1200,.66);
+      const before=photos.reduce((sum,src)=>sum+(typeof src==="string"?src.length:0),0);
+      const after=optimized.reduce((sum,src)=>sum+(typeof src==="string"?src.length:0),0);
+      if(after<before*.9){ entry.photos=optimized; await dbAdd(entry); }
+    }catch(err){
+      if(isStorageQuotaError(err)) break;
+    }
+  }
 }
 async function handlePhotoInput(e){
   const files = Array.from(e.target.files||[]);
@@ -5108,15 +5158,27 @@ async function saveMemory(placeId){
   const date = document.getElementById("journalDate").value || new Date().toISOString().slice(0,10);
   const favorite = document.getElementById("journalFav").checked;
   if(!text && pendingPhotos.length===0) return;
-  const entry = { id: editingEntryId||uid(), placeId, date, text, favorite, photos: pendingPhotos.slice(), createdAt: Date.now() };
+  let entry = { id: editingEntryId||uid(), placeId, date, text, favorite, photos: pendingPhotos.slice(), createdAt: Date.now() };
   try{
-    await dbAdd(entry);
+    await requestDurableStorage();
+    try{
+      await dbAdd(entry);
+    }catch(err){
+      if(!isStorageQuotaError(err) || !entry.photos.length) throw err;
+      showToast("Storage is nearly full — optimizing these photos…");
+      entry = Object.assign({},entry,{photos:await compactPhotos(entry.photos)});
+      await dbAdd(entry);
+    }
     if(editingEntryId){ const idx=allEntries.findIndex(e=>e.id===editingEntryId); if(idx>-1) allEntries[idx]=entry; else allEntries.push(entry); }
     else allEntries.push(entry);
     editingEntryId = null; pendingPhotos = [];
     renderPanel(placeId);
     if(currentView==="journal") renderJournalView();
-  }catch(err){ alert("This browser could not save your memory (storage unavailable)."); }
+  }catch(err){
+    console.warn("Journal save failed",err);
+    if(isStorageQuotaError(err)) alert("Your browser’s storage for My Mississippi is full. Your unsaved photos are still here. Export a journal backup, then delete a few older photo memories or free phone storage before trying again.");
+    else alert("This memory could not be saved. Your text and selected photos are still here, so you can try again.");
+  }
 }
 
 function renderScrapbook(placeId){
@@ -5299,6 +5361,9 @@ async function init(){
   buildDriveSelects();
   updateProgress();
   try{ allEntries = await dbGetAll(); }catch(e){ allEntries = []; }
+  const scheduleStorageCleanup=()=>optimizeOversizedJournalPhotos().catch(err=>console.warn("Journal photo optimization skipped",err));
+  if("requestIdleCallback" in window) requestIdleCallback(scheduleStorageCleanup,{timeout:4000});
+  else setTimeout(scheduleStorageCleanup,1200);
   applyView(false);
   applyFilter();
 
