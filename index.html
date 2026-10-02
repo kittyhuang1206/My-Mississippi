@@ -88,6 +88,7 @@
   .region-label{ font-family:'Fraunces',serif; font-style:italic; font-weight:600; fill:#8a9a8a; opacity:0.55; pointer-events:none; text-anchor:middle; }
 
   .pin-hit{ fill:transparent; cursor:pointer; }
+  .pin-dot{ stroke:#FBF8F2; stroke-width:1.1; vector-effect:non-scaling-stroke; pointer-events:none; }
   .pin-label{ font-family:'Inter',sans-serif; font-weight:700; pointer-events:none; fill:var(--ink); }
   .pin-label-bg{ fill:rgba(255,255,255,0.92); pointer-events:none; }
   .pin.pin-pop .marker-inner{ animation: pinPop .35s ease; }
@@ -498,6 +499,11 @@
           <text class="region-label" id="lblCoast" font-size="15">GULF COAST</text>
           <g id="bloomLayer"></g>
           <g id="pinsLayer"></g>
+          <!-- Labels live ABOVE every marker, not inside each pin's own group: siblings paint in
+               document order, so a pin built later used to cover the label of a pin built earlier.
+               Backgrounds form their own layer under the text, so no capsule can hide a name. -->
+          <g id="labelBgLayer"></g>
+          <g id="labelTextLayer"></g>
         </g>
       </svg>
     </div>
@@ -4155,13 +4161,22 @@ function applyView(animate){
   applyCameraTransform(animate);
   refreshCameraUI();
 }
-let cameraFrame = 0;
-function scheduleCameraRender(){
+/* Every camera change goes through one rAF. `full` means the SCALE changed, so marker sizes,
+   label collisions and county opacity have to be recomputed too — that is what wheel and pinch
+   need. A plain pan leaves scale alone and only moves the transform. */
+let cameraFrame = 0, cameraWantsUI = false;
+function scheduleCameraRender(full){
+  if(full) cameraWantsUI = true;
   if(cameraFrame) return;
-  cameraFrame = requestAnimationFrame(()=>{ cameraFrame=0; applyCameraTransform(false); });
+  cameraFrame = requestAnimationFrame(()=>{
+    cameraFrame = 0;
+    applyCameraTransform(false);
+    if(cameraWantsUI){ cameraWantsUI = false; refreshCameraUI(); }
+  });
 }
 function finishCameraGesture(){
   if(cameraFrame){ cancelAnimationFrame(cameraFrame); cameraFrame=0; }
+  cameraWantsUI = false;
   applyCameraTransform(false);
   refreshCameraUI();
 }
@@ -4185,7 +4200,8 @@ svgWrap.addEventListener("wheel", (e)=>{
   view.tx = view.tx + pt.x*view.scale - pt.x*newScale;
   view.ty = view.ty + pt.y*view.scale - pt.y*newScale;
   view.scale = newScale;
-  applyView(false);
+  clampView(view);          // keep view.tx/ty honest for the next event's screenToUser()
+  scheduleCameraRender(true);
 }, { passive:false });
 
 /* ---------------- Unified pointer-based pan / pinch / click-vs-drag ---------------- */
@@ -4217,7 +4233,7 @@ function interactionIntent(target, clientX, clientY){
     const point = PLACE_POINTS.get(p.id);
     const sx = (point.x*view.scale+view.tx)*metrics.pxPerUnit;
     let sy = (point.y*view.scale+view.ty)*metrics.pxPerUnit;
-    if(pin.dataset.kind!=="want" && pin.dataset.kind!=="mustseestar"){
+    if(pin.dataset.kind!=="want" && pin.dataset.kind!=="mustseestar" && pin.dataset.kind!=="dot"){
       const markerHeight = (p.id===activeId ? SELECTED_SCREEN_H : MARKER_SCREEN_H) * (p.isCapital ? CAPITAL_BONUS : 1);
       sy -= markerHeight*16/26;
     }
@@ -4263,7 +4279,7 @@ svgWrap.addEventListener("pointermove", (e)=>{
     const dx = (e.clientX-panState.lastX)/gestureRect.width*PROJ.W, dy = (e.clientY-panState.lastY)/gestureRect.height*PROJ.H;
     view.tx += dx; view.ty += dy;
     panState.lastX = e.clientX; panState.lastY = e.clientY;
-    scheduleCameraRender();
+    scheduleCameraRender(false);
   } else if(activePointers.size===2 && pinchState){
     const pts = [...activePointers.values()];
     const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
@@ -4273,7 +4289,8 @@ svgWrap.addEventListener("pointermove", (e)=>{
     view.tx = view.tx + pt.x*view.scale - pt.x*newScale;
     view.ty = view.ty + pt.y*view.scale - pt.y*newScale;
     view.scale = newScale;
-    scheduleCameraRender();
+    clampView(view);
+    scheduleCameraRender(true);   // markers keep their on-screen size mid-pinch instead of snapping at the end
   }
 });
 function endPointer(e, cancelled){
@@ -4321,14 +4338,17 @@ function isPlaceVisible(p, pad){
 /* Nudges the view just enough to bring a point into the padded viewport, WITHOUT
    re-centering the whole map and without changing scale. */
 function ensureVisible(p, animate){
-  const rect = svgEl.getBoundingClientRect();
-  const ppu = screenPxPerUserUnit();
+  // The letterboxed map does not fill the element box, so the edge test has to account for the
+  // centring offsets — otherwise "60px from the edge" is measured against empty gutter.
+  const mv = mapViewportMetrics();
+  const ppu = mv.pxPerUnit;
   const pad = 60;
-  const {x,y} = project(p.lat, p.lon);
-  const sx = (x*view.scale + view.tx) * ppu, sy = (y*view.scale + view.ty) * ppu;
+  const point = PLACE_POINTS.get(p.id);
+  const sx = (point.x*view.scale + view.tx) * ppu + mv.offsetX;
+  const sy = (point.y*view.scale + view.ty) * ppu + mv.offsetY;
   let dxScreen = 0, dyScreen = 0;
-  if(sx < pad) dxScreen = pad - sx; else if(sx > rect.width-pad) dxScreen = (rect.width-pad) - sx;
-  if(sy < pad) dyScreen = pad - sy; else if(sy > rect.height-pad) dyScreen = (rect.height-pad) - sy;
+  if(sx < pad) dxScreen = pad - sx; else if(sx > mv.rect.width-pad) dxScreen = (mv.rect.width-pad) - sx;
+  if(sy < pad) dyScreen = pad - sy; else if(sy > mv.rect.height-pad) dyScreen = (mv.rect.height-pad) - sy;
   if(dxScreen || dyScreen){
     view.tx += dxScreen/ppu; view.ty += dyScreen/ppu;
     applyView(animate);
@@ -4440,6 +4460,13 @@ function refreshCountyVisibility(){
 
 const pinsLayer = document.getElementById("pinsLayer");
 const bloomLayer = document.getElementById("bloomLayer");
+const labelBgLayer = document.getElementById("labelBgLayer");
+const labelTextLayer = document.getElementById("labelTextLayer");
+
+/* Every per-frame pass used to re-find each marker with getElementById + three querySelector
+   calls (95 places x 4 lookups, twice a frame). The DOM is built once and never re-created,
+   so hold the refs — and the projected point — alongside the place. */
+const MARKER_REFS = [];
 
 function buildPins(){
   const defs = document.querySelector("#mapSvg defs");
@@ -4490,14 +4517,24 @@ function buildPins(){
     starIconG.setAttribute("class","pin-icon"); starIconG.innerHTML = mustSeeStarSVG();
     starGroup.appendChild(sHalo1); starGroup.appendChild(sHalo2); starGroup.appendChild(starIconG);
 
+    // Low-zoom dot form. Below MARKER_DOT_ZOOM a secondary place collapses to this, so the
+    // statewide view shows the state, the river and the counties instead of 95 stacked pins.
+    const dotEl = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    dotEl.setAttribute("class","pin-dot"); dotEl.setAttribute("fill", REGIONS[p.region].color);
+    dotEl.style.display = "none";
+
     const labelBg = document.createElementNS("http://www.w3.org/2000/svg","rect");
     labelBg.setAttribute("class","pin-label-bg"); labelBg.setAttribute("rx",4); labelBg.style.display="none";
     const label = document.createElementNS("http://www.w3.org/2000/svg","text");
     label.setAttribute("class","pin-label"); label.textContent = p.name; label.style.display="none";
 
-    g.appendChild(hit); g.appendChild(pinGroup); g.appendChild(heartGroup); g.appendChild(starGroup); g.appendChild(labelBg); g.appendChild(label);
+    g.appendChild(hit); g.appendChild(dotEl); g.appendChild(pinGroup); g.appendChild(heartGroup); g.appendChild(starGroup);
     g.addEventListener("pointerenter", ()=> hoverCounty(null));
     pinsLayer.appendChild(g);
+    labelBgLayer.appendChild(labelBg);
+    labelTextLayer.appendChild(label);
+    MARKER_REFS.push({ p:p, g:g, hit:hit, dotEl:dotEl, pinGroup:pinGroup, heartGroup:heartGroup,
+                       starGroup:starGroup, pinIcon:pinIconG, label:label, bg:labelBg, x:x, y:y });
   });
   refreshMarkerVisuals();
 }
@@ -4510,72 +4547,118 @@ const STAR_SCREEN_H = 36;
 const SELECTED_SCREEN_H = 46;
 const HIT_SCREEN_R = 27;         // 54px click/tap diameter for comfortable selection
 const CAPITAL_BONUS = 1.1;       // Jackson stays a touch larger than other pins, on top of the general bump
+const DOT_SCREEN_R = 3.4;        // low-zoom dot radius, in screen px
+const DOT_HIT_SCREEN_R = 17;     // 34px tap target: still comfortable, but dots stop swallowing their neighbours
+const MARKER_DOT_ZOOM = 1.7;     // below this, secondary places render as dots (matches the tier-2 label threshold)
 
+/* A prominent place keeps its full marker at every zoom. Anything the user has acted on counts:
+   a "Want to Go" or "Been There" mark is a deliberate signal and should never be demoted. */
+function isProminent(p){
+  return p.id===activeId || p.isCapital || p.mustSee || p.labelPriority==="high"
+      || p.tier===1 || isWant(p.id) || isVisited(p.id);
+}
+function effectiveMarkerKind(p, baseKind){
+  return (view.scale >= MARKER_DOT_ZOOM || isProminent(p)) ? baseKind : "dot";
+}
+
+/* The SVG is preserveAspectRatio="xMidYMid meet", so the browser scales it by the SMALLER of
+   the two axis ratios and letterboxes the rest — exactly what mapViewportMetrics() computes for
+   hit testing. This used to return rect.width/PROJ.W instead, which is only right when the stage
+   happens to be width-constrained; in a height-constrained layout it was out by the letterbox
+   factor (nearly 2x on a wide window), so every "screen px" size here was silently wrong.
+   getBoundingClientRect() also forces a synchronous layout and this runs twice per camera frame,
+   so cache it — the ratio only changes when the stage resizes. */
+let ppuCache = 0;
 function screenPxPerUserUnit(){
+  if(ppuCache) return ppuCache;
   const rect = svgEl.getBoundingClientRect();
-  return rect.width > 0 ? rect.width/PROJ.W : 1;
+  const r = Math.min(rect.width/PROJ.W, rect.height/PROJ.H);
+  // The stage can measure 0 before layout settles (notably the phone layout, where map-mode
+  // sizing lands a frame late). Use the neutral ratio for that one pass but DO NOT cache it,
+  // or every marker stays sized for a map that was never on screen.
+  if(r > 0){ ppuCache = r; return r; }
+  return 1;
+}
+function invalidateStageMetrics(){ ppuCache = 0; }
+/* The stage resizes for reasons that never raise a window "resize" event — switching to the
+   Journal tab and back, the mobile sheet opening, a flex reflow. A stale ratio would leave every
+   marker sized for the old viewport, so watch the element itself and fall back to window events
+   where ResizeObserver is missing. */
+if(typeof ResizeObserver === "function"){
+  new ResizeObserver(()=>{ invalidateStageMetrics(); scheduleCameraRender(true); }).observe(svgEl);
+} else {
+  window.addEventListener("resize", ()=>{ invalidateStageMetrics(); scheduleCameraRender(true); });
+  window.addEventListener("orientationchange", ()=>{ invalidateStageMetrics(); scheduleCameraRender(true); });
 }
 
 function refreshMarkerScale(){
   const denom = screenPxPerUserUnit() * view.scale;
-  PLACES.forEach(p=>{
-    const g = document.getElementById("pin-"+p.id); if(!g) return;
-    const {x,y} = project(p.lat,p.lon);
-    const kind = g.dataset.kind;
+  for(let i=0;i<MARKER_REFS.length;i++){
+    const m = MARKER_REFS[i], p = m.p, g = m.g;
+    if(g.style.display === "none") continue;          // filtered out — nothing to size
+    const x = m.x, y = m.y;
+    const kind = effectiveMarkerKind(p, g.dataset.baseKind || "unmarked");
     const capitalMult = p.isCapital ? CAPITAL_BONUS : 1;
-    const hit = g.querySelector(".pin-hit");
-    hit.setAttribute("cx", x);
-    hit.setAttribute("r", (HIT_SCREEN_R*capitalMult)/denom);
+
+    // Swapping which group is visible only costs anything when the kind actually changed,
+    // i.e. on a state change or when the camera crosses MARKER_DOT_ZOOM.
+    if(g.dataset.kind !== kind){
+      g.dataset.kind = kind;
+      m.dotEl.style.display       = kind==="dot" ? "" : "none";
+      m.heartGroup.style.display  = kind==="want" ? "" : "none";
+      m.starGroup.style.display   = kind==="mustseestar" ? "" : "none";
+      m.pinGroup.style.display    = (kind==="unmarked" || kind==="visited") ? "" : "none";
+    }
+
+    m.hit.setAttribute("cx", x);
+    if(kind === "dot"){
+      m.dotEl.setAttribute("cx", x); m.dotEl.setAttribute("cy", y);
+      m.dotEl.setAttribute("r", DOT_SCREEN_R/denom);
+      m.hit.setAttribute("cy", y);
+      m.hit.setAttribute("r", DOT_HIT_SCREEN_R/denom);
+      continue;
+    }
+    m.hit.setAttribute("r", (HIT_SCREEN_R*capitalMult)/denom);
     if(kind === "mustseestar"){
       const targetH = (p.id===activeId ? SELECTED_SCREEN_H : STAR_SCREEN_H);
       const k = (targetH/20) / denom; // star viewBox height ~20, centered at (10,10)
-      g.querySelector(".star-group").setAttribute("transform","translate("+(x-10*k)+","+(y-10*k)+") scale("+k+")");
-      hit.setAttribute("cy", y);
+      m.starGroup.setAttribute("transform","translate("+(x-10*k)+","+(y-10*k)+") scale("+k+")");
+      m.hit.setAttribute("cy", y);
     } else if(kind === "want"){
       const targetH = (p.id===activeId ? SELECTED_SCREEN_H : HEART_SCREEN_H);
       const k = (targetH/22) / denom; // heart viewBox height ~22
-      g.querySelector(".heart-group").setAttribute("transform","translate("+(x-12*k)+","+(y-11*k)+") scale("+k+")");
-      hit.setAttribute("cy", y);
+      m.heartGroup.setAttribute("transform","translate("+(x-12*k)+","+(y-11*k)+") scale("+k+")");
+      m.hit.setAttribute("cy", y);
     } else {
       const targetH = (p.id===activeId ? SELECTED_SCREEN_H : MARKER_SCREEN_H) * capitalMult;
       const k = (targetH/26) / denom; // pin viewBox height 26
       const w = 20*k, h = 26*k;
-      g.querySelector(".pin-group").setAttribute("transform","translate("+(x-w/2)+","+(y-h)+") scale("+k+")");
-      hit.setAttribute("cy", y - 16*k);
+      m.pinGroup.setAttribute("transform","translate("+(x-w/2)+","+(y-h)+") scale("+k+")");
+      m.hit.setAttribute("cy", y - 16*k);
     }
-  });
+  }
 }
+/* Records the marker kind a place would have at full zoom, and repaints the pin artwork —
+   both only change on a state/filter change, never on a camera move. refreshMarkerScale then
+   decides, per frame, whether the camera is far enough out to show a dot instead. */
 function refreshMarkerVisuals(){
-  PLACES.forEach(p=>{
-    const g = document.getElementById("pin-"+p.id); if(!g) return;
-    const pinGroup = g.querySelector(".pin-group"), heartGroup = g.querySelector(".heart-group"), starGroup = g.querySelector(".star-group");
-    const pinIconG = g.querySelector(".pin-group .pin-icon");
+  for(let i=0;i<MARKER_REFS.length;i++){
+    const m = MARKER_REFS[i], p = m.p, g = m.g;
 
     // When the Must See filter is active, EVERY visible pin (they're all Must See, since the
     // filter already hides everything else) becomes a standalone star — no pin, no heart.
     if(statusFilter === "mustsee"){
-      pinGroup.style.display = "none";
-      heartGroup.style.display = "none";
-      starGroup.style.display = "";
-      g.dataset.kind = "mustseestar";
+      g.dataset.baseKind = "mustseestar";
       g.classList.toggle("selected", p.id===activeId);
-      return;
+      continue;
     }
 
     const want = isWant(p.id), vis = isVisited(p.id);
     const kind = vis ? "visited" : want ? "want" : "unmarked";
-    g.dataset.kind = kind;
-    starGroup.style.display = "none";
-    if(kind === "want"){
-      pinGroup.style.display = "none";
-      heartGroup.style.display = "";
-    } else {
-      pinGroup.style.display = "";
-      heartGroup.style.display = "none";
-      pinIconG.innerHTML = pinSVG(kind, REGIONS[p.region].color, !!p.isCapital);
-    }
+    g.dataset.baseKind = kind;
+    if(kind !== "want") m.pinIcon.innerHTML = pinSVG(kind, REGIONS[p.region].color, !!p.isCapital);
     g.classList.toggle("selected", p.id===activeId);
-  });
+  }
   refreshMarkerScale();
 }
 
@@ -4596,14 +4679,44 @@ const LABEL_OFFSETS = {
   leland:{dx:1.4,dy:1.0,anchor:"start"}, greenville:{dx:0,dy:-1.6,anchor:"middle"}
 };
 
+/* Label width used to be guessed as 6.2px per character — a figure that matched neither the
+   rendered text nor the zoom level, so collisions were resolved against boxes that did not
+   exist and the background capsule never lined up with its text. Measure it instead, once per
+   distinct string, and store it as "user units of width per 1 unit of font-size" (width scales
+   linearly with font-size, so one measurement covers every zoom level). */
+const labelWidthCache = new Map();
+const LABEL_WIDTH_FALLBACK = 0.55;  // per character, per font-size unit — only used before a real measurement lands
+function labelWidthPerFontUnit(labelEl, text){
+  const cached = labelWidthCache.get(text);
+  if(cached !== undefined) return cached;
+  const prevDisplay = labelEl.style.display, prevText = labelEl.textContent, prevFs = labelEl.getAttribute("font-size");
+  labelEl.style.display = ""; labelEl.textContent = text; labelEl.setAttribute("font-size", 10);
+  let unit = 0;
+  try{ unit = labelEl.getComputedTextLength()/10; }catch(e){ unit = 0; }
+  labelEl.style.display = prevDisplay; labelEl.textContent = prevText;
+  if(prevFs === null) labelEl.removeAttribute("font-size"); else labelEl.setAttribute("font-size", prevFs);
+  // A hidden map (Journal tab) or a not-yet-laid-out SVG measures as 0 — fall back without caching.
+  if(!(unit > 0)) return text.length*LABEL_WIDTH_FALLBACK;
+  labelWidthCache.set(text, unit);
+  return unit;
+}
+/* Inter arrives asynchronously from Google Fonts, so anything measured before it lands was
+   measured in the fallback face. Throw those measurements away once the real font is ready. */
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(()=>{ labelWidthCache.clear(); refreshLabelVisibility(); });
+}
+
 function refreshLabelVisibility(){
   const showTier2 = view.scale >= 1.7;
   const showTier3 = view.scale >= 2.8;
   const placed = [];
-  const rect = svgEl.getBoundingClientRect();
   const ppu = screenPxPerUserUnit();
+  const userToScreen = ppu * view.scale;
   function screenPos(x,y){ return { sx:(x*view.scale+view.tx)*ppu, sy:(y*view.scale+view.ty)*ppu }; }
-  function overlaps(a,b){ return !(a.sx+a.w/2<b.sx-b.w/2 || a.sx-a.w/2>b.sx+b.w/2 || a.sy+9<b.sy-9 || a.sy-9>b.sy+9); }
+  function overlaps(a,b){
+    return !(a.sx+a.w/2 < b.sx-b.w/2 || a.sx-a.w/2 > b.sx+b.w/2
+          || a.sy+a.h/2 < b.sy-b.h/2 || a.sy-a.h/2 > b.sy+b.h/2);
+  }
   function labelPriorityOf(p){
     if(p.id===activeId) return -1;
     if(p.isCapital) return 0;
@@ -4613,38 +4726,47 @@ function refreshLabelVisibility(){
     if(p.tier===3) return 4;
     return 5;
   }
-  const sorted = PLACES.slice().sort((a,b)=> labelPriorityOf(a) - labelPriorityOf(b));
-  const offsetUserUnit = 18 / (ppu * view.scale); // ~18 screen px worth of offset, in user units
+  const sorted = MARKER_REFS.slice().sort((a,b)=> labelPriorityOf(a.p) - labelPriorityOf(b.p));
+  const offsetUserUnit = 18 / userToScreen; // ~18 screen px worth of offset, in user units
+  const fs = 11/Math.max(view.scale*0.55,0.7);
 
-  sorted.forEach(p=>{
-    const g = document.getElementById("pin-"+p.id); if(!g || g.style.display==="none") return;
-    const label = g.querySelector(".pin-label"), bg = g.querySelector(".pin-label-bg");
+  sorted.forEach(m=>{
+    const p = m.p, g = m.g;
+    const label = m.label, bg = m.bg;
+    // The label is no longer a child of the pin, so hiding the pin no longer hides it for free —
+    // every path out of this loop has to put the label away explicitly.
+    if(g.style.display==="none"){ label.style.display="none"; bg.style.display="none"; return; }
     let shouldShow = p.id===activeId || p.isCapital || p.labelPriority==="high" || p.tier===1 || (p.tier===2 && showTier2) || (p.tier===3 && showTier3);
     if(g.classList.contains("filtered-out")) shouldShow = false;
     if(!shouldShow){ label.style.display="none"; bg.style.display="none"; return; }
 
-    const {x,y} = project(p.lat,p.lon);
+    const x = m.x, y = m.y;
     const off = LABEL_OFFSETS[p.id] || {dx:0,dy:1,anchor:"middle"};
     const lx = x + off.dx*offsetUserUnit, ly = y + off.dy*offsetUserUnit;
     const pos = screenPos(lx,ly);
     const starPrefix = (p.mustSee && statusFilter !== "mustsee") ? "★ " : "";
     const nameText = starPrefix + (p.isCapital ? p.name.toUpperCase() : p.name);
-    const w = nameText.length*6.2+10;
-    const box = { sx:pos.sx, sy:pos.sy, w };
+
+    // Real measured width, in user units at this zoom's font-size, then in screen px.
+    const wUser = labelWidthPerFontUnit(label, nameText) * fs;
+    const wScreen = wUser * userToScreen, hScreen = fs * userToScreen;
+    // (lx,ly) is the text ANCHOR, not the box centre — shift by the anchor to get a real box.
+    const anchorShift = off.anchor==="start" ? wScreen/2 : off.anchor==="end" ? -wScreen/2 : 0;
+    const box = { sx:pos.sx + anchorShift, sy:pos.sy, w:wScreen, h:hScreen };
     const collide = placed.some(pl=>overlaps(pl,box));
     if(collide && p.id!==activeId && !p.isCapital && p.labelPriority!=="high"){ label.style.display="none"; bg.style.display="none"; return; }
     placed.push(box);
     label.style.display=""; bg.style.display="";
     label.textContent = nameText;
-    const fs = 11/Math.max(view.scale*0.55,0.7);
     label.setAttribute("font-size", fs);
     label.setAttribute("x", lx); label.setAttribute("y", ly+fs*0.35); label.setAttribute("text-anchor", off.anchor);
     label.style.fill = p.isCapital ? "#B84E2C" : "";
     label.style.opacity = (activeId && p.id!==activeId && !p.isCapital) ? 0.72 : 1;
-    let bgX = lx, bgW = nameText.length*fs*0.64;
-    if(off.anchor==="middle") bgX = lx - bgW/2; else if(off.anchor==="end") bgX = lx - bgW; else bgX = lx;
+    const padX = fs*0.3;
+    let bgX = lx - padX;
+    if(off.anchor==="middle") bgX = lx - wUser/2 - padX; else if(off.anchor==="end") bgX = lx - wUser - padX;
     bg.setAttribute("x", bgX); bg.setAttribute("y", ly - fs*0.95);
-    bg.setAttribute("width", bgW); bg.setAttribute("height", fs*1.5);
+    bg.setAttribute("width", wUser + padX*2); bg.setAttribute("height", fs*1.5);
     bg.style.opacity = label.style.opacity;
   });
 }
